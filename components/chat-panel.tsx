@@ -38,14 +38,14 @@ export function ChatPanel({
 
   const exampleMessages = [
     {
-      heading: 'List flights flying from',
-      subheading: 'San Francisco to Rome today',
-      message: `List flights flying from San Francisco to Rome today`
+      heading: 'list open invoices',
+      // subheading: 'Xero',
+      message: `List number of invoices that are still open in Xero`
     },
     {
-      heading: 'What is the status',
-      subheading: 'of flight BA142?',
-      message: 'What is the status of flight BA142?'
+      heading: 'Top 5 products sold this month',
+      // subheading: 'Shopify',
+      message: 'What is the top 5 products sold in Shopify this month?'
     }
   ]
 

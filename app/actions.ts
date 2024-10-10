@@ -2,10 +2,27 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { kv } from '@vercel/kv'
 
 import { auth } from '@/auth'
 import { type Chat } from '@/lib/types'
+
+const CLOUD_RUN_API_URL = process.env.CLOUD_RUN_API_URL || 'http://your-cloud-run-url.com/api'
+
+async function fetchFromCloudRun(endpoint: string, method: string, body?: any) {
+  const response = await fetch(`${CLOUD_RUN_API_URL}${endpoint}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  return response.json()
+}
 
 export async function getChats(userId?: string | null) {
   if (!userId) {
@@ -13,31 +30,24 @@ export async function getChats(userId?: string | null) {
   }
 
   try {
-    const pipeline = kv.pipeline()
-    const chats: string[] = await kv.zrange(`user:chat:${userId}`, 0, -1, {
-      rev: true
-    })
-
-    for (const chat of chats) {
-      pipeline.hgetall(chat)
-    }
-
-    const results = await pipeline.exec()
-
-    return results as Chat[]
+    return await fetchFromCloudRun(`/chats/${userId}`, 'GET')
   } catch (error) {
+    console.error('Error fetching chats:', error)
     return []
   }
 }
 
 export async function getChat(id: string, userId: string) {
-  const chat = await kv.hgetall<Chat>(`chat:${id}`)
-
-  if (!chat || (userId && chat.userId !== userId)) {
+  try {
+    const chat = await fetchFromCloudRun(`/chat/${id}`, 'GET')
+    if (!chat || (userId && chat.userId !== userId)) {
+      return null
+    }
+    return chat
+  } catch (error) {
+    console.error('Error fetching chat:', error)
     return null
   }
-
-  return chat
 }
 
 export async function removeChat({ id, path }: { id: string; path: string }) {
@@ -49,20 +59,14 @@ export async function removeChat({ id, path }: { id: string; path: string }) {
     }
   }
 
-  //Convert uid to string for consistent comparison with session.user.id
-  const uid = String(await kv.hget(`chat:${id}`, 'userId'))
-
-  if (uid !== session?.user?.id) {
-    return {
-      error: 'Unauthorized'
-    }
+  try {
+    await fetchFromCloudRun(`/chat/${id}`, 'DELETE', { userId: session.user.id })
+    revalidatePath('/')
+    return revalidatePath(path)
+  } catch (error) {
+    console.error('Error removing chat:', error)
+    return { error: 'Failed to remove chat' }
   }
-
-  await kv.del(`chat:${id}`)
-  await kv.zrem(`user:chat:${session.user.id}`, `chat:${id}`)
-
-  revalidatePath('/')
-  return revalidatePath(path)
 }
 
 export async function clearChats() {
@@ -74,31 +78,27 @@ export async function clearChats() {
     }
   }
 
-  const chats: string[] = await kv.zrange(`user:chat:${session.user.id}`, 0, -1)
-  if (!chats.length) {
+  try {
+    await fetchFromCloudRun(`/chats/${session.user.id}`, 'DELETE')
+    revalidatePath('/')
     return redirect('/')
+  } catch (error) {
+    console.error('Error clearing chats:', error)
+    return { error: 'Failed to clear chats' }
   }
-  const pipeline = kv.pipeline()
-
-  for (const chat of chats) {
-    pipeline.del(chat)
-    pipeline.zrem(`user:chat:${session.user.id}`, chat)
-  }
-
-  await pipeline.exec()
-
-  revalidatePath('/')
-  return redirect('/')
 }
 
 export async function getSharedChat(id: string) {
-  const chat = await kv.hgetall<Chat>(`chat:${id}`)
-
-  if (!chat || !chat.sharePath) {
+  try {
+    const chat = await fetchFromCloudRun(`/shared-chat/${id}`, 'GET')
+    if (!chat || !chat.sharePath) {
+      return null
+    }
+    return chat
+  } catch (error) {
+    console.error('Error fetching shared chat:', error)
     return null
   }
-
-  return chat
 }
 
 export async function shareChat(id: string) {
@@ -110,37 +110,25 @@ export async function shareChat(id: string) {
     }
   }
 
-  const chat = await kv.hgetall<Chat>(`chat:${id}`)
-
-  if (!chat || chat.userId !== session.user.id) {
-    return {
-      error: 'Something went wrong'
-    }
+  try {
+    return await fetchFromCloudRun(`/share-chat/${id}`, 'POST', { userId: session.user.id })
+  } catch (error) {
+    console.error('Error sharing chat:', error)
+    return { error: 'Failed to share chat' }
   }
-
-  const payload = {
-    ...chat,
-    sharePath: `/share/${chat.id}`
-  }
-
-  await kv.hmset(`chat:${chat.id}`, payload)
-
-  return payload
 }
 
 export async function saveChat(chat: Chat) {
   const session = await auth()
 
-  if (session && session.user) {
-    const pipeline = kv.pipeline()
-    pipeline.hmset(`chat:${chat.id}`, chat)
-    pipeline.zadd(`user:chat:${chat.userId}`, {
-      score: Date.now(),
-      member: `chat:${chat.id}`
-    })
-    await pipeline.exec()
-  } else {
+  if (!session || !session.user) {
     return
+  }
+
+  try {
+    await fetchFromCloudRun('/save-chat', 'POST', { chat, userId: session.user.id })
+  } catch (error) {
+    console.error('Error saving chat:', error)
   }
 }
 
@@ -149,8 +137,6 @@ export async function refreshHistory(path: string) {
 }
 
 export async function getMissingKeys() {
-  const keysRequired = ['GOOGLE_GENERATIVE_AI_API_KEY']
-  return keysRequired
-    .map(key => (process.env[key] ? '' : key))
-    .filter(key => key !== '')
+  // This function is no longer needed as we're not using the Google Generative AI API
+  return []
 }

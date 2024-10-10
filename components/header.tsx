@@ -56,7 +56,7 @@ export function Header() {
         </React.Suspense>
       </div>
       <div className="flex items-center justify-end gap-2">
-        <Button asChild size="sm" variant="ghost">
+        {/* <Button asChild size="sm" variant="ghost">
           <a
             target="_blank"
             href="https://github.com/vercel-labs/gemini-chatbot"
@@ -65,8 +65,8 @@ export function Header() {
             <IconGitHub />
             <span className="hidden ml-2 md:flex">GitHub</span>
           </a>
-        </Button>
-        <Button asChild size="sm" className="rounded-lg gap-1">
+        </Button> */}
+        {/* <Button asChild size="sm" className="rounded-lg gap-1">
           <a
             href="https://vercel.com/templates/next.js/gemini-ai-chatbot"
             target="_blank"
@@ -75,7 +75,7 @@ export function Header() {
             <span className="hidden sm:block">Deploy to Vercel</span>
             <span className="sm:hidden">Deploy</span>
           </a>
-        </Button>
+        </Button> */}
       </div>
     </header>
   )
