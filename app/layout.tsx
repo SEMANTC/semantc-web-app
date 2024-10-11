@@ -1,11 +1,17 @@
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
+import { Space_Grotesk } from 'next/font/google'
 import '@/app/globals.css'
 import { cn } from '@/lib/utils'
 import { TailwindIndicator } from '@/components/tailwind-indicator'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 import { Toaster } from '@/components/ui/sonner'
+
+const spaceGrotesk = Space_Grotesk({ 
+  subsets: ['latin'],
+  variable: '--font-space-grotesk'
+})
 
 export const metadata = {
   metadataBase: new URL('https://your-app-url.com'),
@@ -34,7 +40,7 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={spaceGrotesk.variable}>
       <body
         className={cn(
           'font-sans antialiased',
