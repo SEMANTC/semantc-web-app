@@ -39,25 +39,25 @@ export function ChatPanel({
   const exampleMessages = [
     {
       heading: 'list open invoices',
-      // subheading: 'Xero',
+      subheading: 'Xero',
       message: `List number of invoices that are still open in Xero`
     },
     {
       heading: 'Top 5 products sold this month',
-      // subheading: 'Shopify',
-      message: 'What is the top 5 products sold in Shopify this month?'
+      subheading: 'Shopify',
+      message: 'What are the top 5 products sold in Shopify this month?'
     }
   ]
 
   return (
-    <div className="fixed inset-x-0 bg-white/90 bottom-0 w-full duration-300 ease-in-out peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px] dark:from-10%">
+    <div className="fixed inset-x-0 bottom-0 bg-gradient-to-b from-muted/10 from-10% to-muted/30 to-50%">
       <ButtonScrollToBottom
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
       />
 
-      <div className="mx-auto sm:max-w-2xl sm:px-4">
-        <div className="mb-4 grid sm:grid-cols-2 gap-2 sm:gap-4 px-4 sm:px-0">
+      <div className="mx-auto max-w-5xl px-4">
+        <div className="mb-4 grid sm:grid-cols-2 gap-2 sm:gap-4">
           {messages.length === 0 &&
             exampleMessages.map((example, index) => (
               <div
@@ -104,15 +104,17 @@ export function ChatPanel({
                 }}
               >
                 <div className="font-medium">{example.heading}</div>
-                <div className="text-sm text-zinc-800">
-                  {example.subheading}
-                </div>
+                {example.subheading && (
+                  <div className="text-sm text-zinc-800">
+                    {example.subheading}
+                  </div>
+                )}
               </div>
             ))}
         </div>
 
         {messages?.length >= 2 ? (
-          <div className="flex h-fit items-center justify-center">
+          <div className="flex h-fit items-center justify-center mb-4">
             <div className="flex space-x-2">
               {id && title ? (
                 <>
@@ -140,9 +142,9 @@ export function ChatPanel({
           </div>
         ) : null}
 
-        <div className="grid gap-4 sm:pb-4">
+        <div className="pb-4 sm:pb-4">
           <PromptForm input={input} setInput={setInput} />
-          <FooterText className="hidden sm:block" />
+          <FooterText className="hidden sm:block mt-2" />
         </div>
       </div>
     </div>

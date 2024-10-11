@@ -50,9 +50,9 @@ export function Chat({ id, className, session }: ChatProps) {
     useScrollAnchor()
 
   return (
-    <div className={cn('flex flex-col h-full max-w-5xl mx-auto', className)}>
-      <div className="flex-1 overflow-auto" ref={scrollRef}>
-        <div ref={messagesRef}>
+    <div className={cn('flex flex-col h-full w-full', className)}>
+      <div className="flex-1 overflow-auto w-full" ref={scrollRef}>
+        <div className="max-w-5xl mx-auto" ref={messagesRef}>
           {messages.length ? (
             <ChatList messages={messages} />
           ) : (

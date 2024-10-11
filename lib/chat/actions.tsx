@@ -20,19 +20,33 @@ if (!CLOUD_RUN_API_URL) {
 }
 
 async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
-  const response = await fetch(`${CLOUD_RUN_API_URL}${endpoint}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  const fullUrl = `${CLOUD_RUN_API_URL}${endpoint}`;
+  console.log(`Calling Cloud Run API: ${fullUrl}`);
+  console.log('Request body:', JSON.stringify(body));
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
+  try {
+    const response = await fetch(fullUrl, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const responseText = await response.text();
+    console.log('Raw response:', responseText);
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status} ${response.statusText}`);
+      console.error(`Error body: ${responseText}`);
+      throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
+    }
+
+    return JSON.parse(responseText);
+  } catch (error) {
+    console.error('Error in API call:', error);
+    throw error;
   }
-
-  return response.json()
 }
 
 async function submitUserMessage(content: string) {
@@ -40,15 +54,17 @@ async function submitUserMessage(content: string) {
 
   const aiState = getMutableAIState()
 
+  const newMessage = {
+    id: nanoid(),
+    role: 'user',
+    content: content
+  }
+
   aiState.update({
     ...aiState.get(),
     messages: [
       ...aiState.get().messages,
-      {
-        id: nanoid(),
-        role: 'user',
-        content: content
-      }
+      newMessage
     ]
   })
 
@@ -60,36 +76,36 @@ async function submitUserMessage(content: string) {
   const spinnerStream = createStreamableUI(<SpinnerMessage />)
   const messageStream = createStreamableUI(null)
 
-  ;(async () => {
-    try {
-      const result = await callCloudRunAPI('/chat', 'POST', { messages: history })
+  try {
+    console.log('Sending request to Cloud Run:', JSON.stringify({ messages: history }))
 
-      spinnerStream.done(null)
-      messageStream.update(<BotMessage content={result.message} />)
+    const result = await callCloudRunAPI('/api/chat', 'POST', { messages: history })
 
-      aiState.done({
-        ...aiState.get(),
-        messages: [
-          ...aiState.get().messages,
-          {
-            id: nanoid(),
-            role: 'assistant',
-            content: result.message
-          }
-        ]
-      })
+    console.log('Received response from Cloud Run:', result)
 
-      messageStream.done()
-    } catch (e) {
-      console.error(e)
+    spinnerStream.done(null)
+    messageStream.update(<BotMessage content={result.message} />)
 
-      const error = new Error(
-        'There was an error processing your request. Please try again later.'
-      )
-      messageStream.error(error)
-      aiState.done()
-    }
-  })()
+    aiState.update({
+      ...aiState.get(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: nanoid(),
+          role: 'assistant',
+          content: result.message
+        }
+      ]
+    })
+
+    messageStream.done()
+  } catch (e) {
+    console.error('Error in submitUserMessage:', e)
+
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred'
+    messageStream.update(<BotMessage content={`Error: ${errorMessage}`} />)
+    spinnerStream.done(null)
+  }
 
   return {
     id: nanoid(),
@@ -159,7 +175,11 @@ export const AI = createAI<AIState, UIState>({
         path
       }
 
-      await saveChat(chat)
+      try {
+        await saveChat(chat)
+      } catch (error) {
+        console.error('Error saving chat:', error)
+      }
     }
   }
 })

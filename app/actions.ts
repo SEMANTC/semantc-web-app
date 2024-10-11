@@ -2,11 +2,15 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-
 import { auth } from '@/auth'
 import { type Chat } from '@/lib/types'
+import { kv } from '@vercel/kv'
 
-const CLOUD_RUN_API_URL = process.env.CLOUD_RUN_API_URL || 'http://your-cloud-run-url.com/api'
+const CLOUD_RUN_API_URL = process.env.CLOUD_RUN_API_URL
+
+if (!CLOUD_RUN_API_URL) {
+  throw new Error('CLOUD_RUN_API_URL is not set in the environment variables')
+}
 
 async function fetchFromCloudRun(endpoint: string, method: string, body?: any) {
   const response = await fetch(`${CLOUD_RUN_API_URL}${endpoint}`, {
@@ -30,7 +34,7 @@ export async function getChats(userId?: string | null) {
   }
 
   try {
-    return await fetchFromCloudRun(`/chats/${userId}`, 'GET')
+    return await fetchFromCloudRun(`/api/get-chats?userId=${userId}`, 'GET')
   } catch (error) {
     console.error('Error fetching chats:', error)
     return []
@@ -39,11 +43,7 @@ export async function getChats(userId?: string | null) {
 
 export async function getChat(id: string, userId: string) {
   try {
-    const chat = await fetchFromCloudRun(`/chat/${id}`, 'GET')
-    if (!chat || (userId && chat.userId !== userId)) {
-      return null
-    }
-    return chat
+    return await fetchFromCloudRun(`/api/get-chat?id=${id}&userId=${userId}`, 'GET')
   } catch (error) {
     console.error('Error fetching chat:', error)
     return null
@@ -53,19 +53,20 @@ export async function getChat(id: string, userId: string) {
 export async function removeChat({ id, path }: { id: string; path: string }) {
   const session = await auth()
 
-  if (!session) {
+  if (!session?.user?.id) {
     return {
       error: 'Unauthorized'
     }
   }
 
   try {
-    await fetchFromCloudRun(`/chat/${id}`, 'DELETE', { userId: session.user.id })
+    await fetchFromCloudRun(`/api/remove-chat`, 'POST', { id, userId: session.user.id })
     revalidatePath('/')
     return revalidatePath(path)
   } catch (error) {
-    console.error('Error removing chat:', error)
-    return { error: 'Failed to remove chat' }
+    return {
+      error: 'Failed to remove chat'
+    }
   }
 }
 
@@ -79,18 +80,19 @@ export async function clearChats() {
   }
 
   try {
-    await fetchFromCloudRun(`/chats/${session.user.id}`, 'DELETE')
+    await fetchFromCloudRun(`/api/clear-chats`, 'POST', { userId: session.user.id })
     revalidatePath('/')
     return redirect('/')
   } catch (error) {
-    console.error('Error clearing chats:', error)
-    return { error: 'Failed to clear chats' }
+    return {
+      error: 'Failed to clear chats'
+    }
   }
 }
 
 export async function getSharedChat(id: string) {
   try {
-    const chat = await fetchFromCloudRun(`/shared-chat/${id}`, 'GET')
+    const chat = await fetchFromCloudRun(`/api/get-shared-chat?id=${id}`, 'GET')
     if (!chat || !chat.sharePath) {
       return null
     }
@@ -111,32 +113,26 @@ export async function shareChat(id: string) {
   }
 
   try {
-    return await fetchFromCloudRun(`/share-chat/${id}`, 'POST', { userId: session.user.id })
+    return await fetchFromCloudRun(`/api/share-chat`, 'POST', { id, userId: session.user.id })
   } catch (error) {
-    console.error('Error sharing chat:', error)
-    return { error: 'Failed to share chat' }
+    return {
+      error: 'Failed to share chat'
+    }
   }
 }
 
 export async function saveChat(chat: Chat) {
   const session = await auth()
 
-  if (!session || !session.user) {
+  if (session && session.user) {
+    const pipeline = kv.pipeline()
+    pipeline.hmset(`chat:${chat.id}`, chat)
+    pipeline.zadd(`user:chat:${chat.userId}`, {
+      score: Date.now(),
+      member: `chat:${chat.id}`
+    })
+    await pipeline.exec()
+  } else {
     return
   }
-
-  try {
-    await fetchFromCloudRun('/save-chat', 'POST', { chat, userId: session.user.id })
-  } catch (error) {
-    console.error('Error saving chat:', error)
-  }
-}
-
-export async function refreshHistory(path: string) {
-  redirect(path)
-}
-
-export async function getMissingKeys() {
-  // This function is no longer needed as we're not using the Google Generative AI API
-  return []
 }

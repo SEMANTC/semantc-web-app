@@ -8,7 +8,7 @@ export default async function ChatLayout({ children }: ChatLayoutProps) {
   return (
     <div className="relative flex h-[calc(100vh_-_theme(spacing.16))] overflow-hidden">
       <SidebarDesktop />
-      {children}
+      <div className="flex-1 overflow-hidden">{children}</div>
     </div>
   )
 }
