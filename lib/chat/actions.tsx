@@ -68,7 +68,7 @@ async function submitUserMessage(content: string) {
     ]
   })
 
-  const history = aiState.get().messages.map(message => ({
+  const history = aiState.get().messages.map((message: Message) => ({
     role: message.role,
     content: message.content
   }))
@@ -116,7 +116,7 @@ async function submitUserMessage(content: string) {
 export type Message = {
   role: 'user' | 'assistant' | 'system'
   content: string
-  id?: string
+  id: string
 }
 
 export type AIState = {
@@ -128,6 +128,15 @@ export type UIState = {
   id: string
   display: React.ReactNode
 }[]
+
+export const getUIStateFromAIState = (aiState: AIState): UIState => {
+  return aiState.messages.map((message: Message, index) => ({
+    id: `${aiState.chatId}-${index}`,
+    display: message.role === 'user' 
+      ? <UserMessage>{message.content}</UserMessage>
+      : <BotMessage content={message.content} />
+  }))
+}
 
 export const AI = createAI<AIState, UIState>({
   actions: {
@@ -144,7 +153,7 @@ export const AI = createAI<AIState, UIState>({
       const aiState = getAIState()
 
       if (aiState) {
-        return aiState.messages.map((message, index) => ({
+        return aiState.messages.map((message: Message, index: number) => ({
           id: `${aiState.chatId}-${index}`,
           display: message.role === 'user' 
             ? <UserMessage>{message.content}</UserMessage>

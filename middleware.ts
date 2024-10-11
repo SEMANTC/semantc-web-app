@@ -9,7 +9,7 @@ const rateLimit = new Map<string, { count: number; timestamp: number }>()
 
 export async function middleware(req: NextRequest, ev: NextFetchEvent) {
   if (req.method === 'POST') {
-    const realIp = req.headers.get('x-real-ip') || 'no-ip'
+    const realIp = req.headers.get('x-real-ip') || req.ip || 'no-ip'
     const now = Date.now()
 
     // Simple in-memory rate limiting
@@ -33,6 +33,12 @@ export async function middleware(req: NextRequest, ev: NextFetchEvent) {
       return new NextResponse('Too many requests', { status: 429 })
     }
   }
+
+  // Authentication check removed
+  // const session = await auth()
+  // if (!session?.user && !req.nextUrl.pathname.startsWith('/login')) {
+  //   return NextResponse.redirect(new URL('/login', req.url))
+  // }
 
   return NextResponse.next()
 }
