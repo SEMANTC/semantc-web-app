@@ -50,45 +50,45 @@ export async function getChat(id: string /*, userId: string */) {
   }
 }
 
-// export async function removeChat({ id, path }: { id: string; path: string }) {
-//   const session = await auth()
+export async function removeChat({ id, path }: { id: string; path: string }) {
+  // const session = await auth()
 
-//   if (!session?.user?.id) {
-//     return {
-//       error: 'Unauthorized'
-//     }
-//   }
+  // if (!session?.user?.id) {
+  //   return {
+  //     error: 'Unauthorized'
+  //   }
+  // }
 
-//   try {
-//     await fetchFromCloudRun(`/api/remove-chat`, 'POST', { id, userId: session.user.id })
-//     revalidatePath('/')
-//     return revalidatePath(path)
-//   } catch (error) {
-//     return {
-//       error: 'Failed to remove chat'
-//     }
-//   }
-// }
+  try {
+    await fetchFromCloudRun(`/api/remove-chat`, 'POST', { id /*, userId: session.user.id */ })
+    revalidatePath('/')
+    return revalidatePath(path)
+  } catch (error) {
+    return {
+      error: 'Failed to remove chat'
+    }
+  }
+}
 
-// export async function clearChats() {
-//   const session = await auth()
+export async function clearChats() {
+  // const session = await auth()
 
-//   if (!session?.user?.id) {
-//     return {
-//       error: 'Unauthorized'
-//     }
-//   }
+  // if (!session?.user?.id) {
+  //   return {
+  //     error: 'Unauthorized'
+  //   }
+  // }
 
-//   try {
-//     await fetchFromCloudRun(`/api/clear-chats`, 'POST', { userId: session.user.id })
-//     revalidatePath('/')
-//     return redirect('/')
-//   } catch (error) {
-//     return {
-//       error: 'Failed to clear chats'
-//     }
-//   }
-// }
+  try {
+    await fetchFromCloudRun(`/api/clear-chats`, 'POST' /*, { userId: session.user.id } */)
+    revalidatePath('/')
+    return redirect('/')
+  } catch (error) {
+    return {
+      error: 'Failed to clear chats'
+    }
+  }
+}
 
 export async function getSharedChat(id: string) {
   try {
@@ -103,23 +103,23 @@ export async function getSharedChat(id: string) {
   }
 }
 
-// export async function shareChat(id: string) {
-//   const session = await auth()
+export async function shareChat(id: string) {
+  // const session = await auth()
 
-//   if (!session?.user?.id) {
-//     return {
-//       error: 'Unauthorized'
-//     }
-//   }
+  // if (!session?.user?.id) {
+  //   return {
+  //     error: 'Unauthorized'
+  //   }
+  // }
 
-//   try {
-//     return await fetchFromCloudRun(`/api/share-chat`, 'POST', { id, userId: session.user.id })
-//   } catch (error) {
-//     return {
-//       error: 'Failed to share chat'
-//     }
-//   }
-// }
+  try {
+    return await fetchFromCloudRun(`/api/share-chat`, 'POST', { id /*, userId: session.user.id */ })
+  } catch (error) {
+    return {
+      error: 'Failed to share chat'
+    }
+  }
+}
 
 export async function saveChat(chat: Chat) {
   // const session = await auth()

@@ -1,11 +1,11 @@
 'use server'
 
-import { signIn } from '@/auth'
+// import { signIn } from '@/auth'
 import { ResultCode, getStringFromBuffer } from '@/lib/utils'
 import { z } from 'zod'
-import { kv } from '@vercel/kv'
+// import { kv } from '@vercel/kv'
 import { getUser } from '../login/actions'
-import { AuthError } from 'next-auth'
+// import { AuthError } from 'next-auth'
 
 export async function createUser(
   email: string,
@@ -27,7 +27,10 @@ export async function createUser(
       salt
     }
 
-    await kv.hmset(`user:${email}`, user)
+    // Commented out KV storage
+    // await kv.hmset(`user:${email}`, user)
+
+    console.log('Creating user:', user)
 
     return {
       type: 'success',
@@ -73,34 +76,35 @@ export async function signup(
       const result = await createUser(email, hashedPassword, salt)
 
       if (result.resultCode === ResultCode.UserCreated) {
-        await signIn('credentials', {
-          email,
-          password,
-          redirect: false
-        })
+        // Commented out sign in
+        // await signIn('credentials', {
+        //   email,
+        //   password,
+        //   redirect: false
+        // })
       }
 
       return result
     } catch (error) {
-      if (error instanceof AuthError) {
-        switch (error.type) {
-          case 'CredentialsSignin':
-            return {
-              type: 'error',
-              resultCode: ResultCode.InvalidCredentials
-            }
-          default:
-            return {
-              type: 'error',
-              resultCode: ResultCode.UnknownError
-            }
-        }
-      } else {
+      // if (error instanceof AuthError) {
+      //   switch (error.type) {
+      //     case 'CredentialsSignin':
+      //       return {
+      //         type: 'error',
+      //         resultCode: ResultCode.InvalidCredentials
+      //       }
+      //     default:
+      //       return {
+      //         type: 'error',
+      //         resultCode: ResultCode.UnknownError
+      //       }
+      //   }
+      // } else {
         return {
           type: 'error',
           resultCode: ResultCode.UnknownError
         }
-      }
+      // }
     }
   } else {
     return {
