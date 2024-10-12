@@ -1,18 +1,18 @@
 import { UIState } from '@/lib/chat/actions'
-import { Session } from '@/lib/types'
+// import { Session } from '@/lib/types'
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
 import Link from 'next/link'
 
 export interface ChatList {
   messages: UIState
-  session?: Session
+  // session?: Session
   isShared: boolean
 }
 
-export function ChatList({ messages, session, isShared }: ChatList) {
+export function ChatList({ messages, /* session, */ isShared }: ChatList) {
   return messages.length ? (
     <div className="relative mx-auto max-w-2xl grid auto-rows-max gap-8 px-4">
-      {!isShared && !session ? (
+      {/* {!isShared && !session ? (
         <>
           <div className="group relative flex items-start md:-ml-12">
             <div className="bg-background flex size-[25px] shrink-0 select-none items-center justify-center rounded-lg border shadow-sm">
@@ -33,7 +33,7 @@ export function ChatList({ messages, session, isShared }: ChatList) {
             </div>
           </div>
         </>
-      ) : null}
+      ) : null} */}
 
       {messages.map(message => (
         <div key={message.id}>

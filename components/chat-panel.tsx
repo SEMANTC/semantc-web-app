@@ -1,12 +1,10 @@
 import * as React from 'react'
 
-// import { shareChat } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { PromptForm } from '@/components/prompt-form'
 import { ButtonScrollToBottom } from '@/components/button-scroll-to-bottom'
 import { IconShare } from '@/components/ui/icons'
 import { FooterText } from '@/components/footer'
-// import { ChatShareDialog } from '@/components/chat-share-dialog'
 import { useAIState, useActions, useUIState } from 'ai/rsc'
 import type { AI } from '@/lib/chat/actions'
 import { nanoid } from 'nanoid'
@@ -34,23 +32,22 @@ export function ChatPanel({
   const [aiState] = useAIState()
   const [messages, setMessages] = useUIState<typeof AI>()
   const { submitUserMessage } = useActions()
-  // const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
 
   const exampleMessages = [
     {
-      heading: 'list all active customers and their total invoice amounts',
-      subheading: 'Xero',
-      message: `list all active customers and their total invoice amounts`
+      heading: '',
+      subheading: 'accounts with the highest number of payments?',
+      message: `Which accounts have the highest number of payments?`
     },
     {
-      heading: 'show invoices that have been fully paid',
-      subheading: 'Xero',
-      message: 'show invoices that have been fully paid'
+      heading: '',
+      subheading: 'list my active account only',
+      message: 'name of active accounts'
     }
   ]
 
   return (
-    <div className="fixed inset-x-0 bottom-0 bg-gradient-to-b from-muted/10 from-10% to-muted/30 to-50%">
+    <div className="fixed inset-x-0 bottom-0 bg-gradient-to-b from-muted/10 from-10% to-muted/30 to-50% z-10">
       <ButtonScrollToBottom
         isAtBottom={isAtBottom}
         scrollToBottom={scrollToBottom}
@@ -102,37 +99,6 @@ export function ChatPanel({
               </div>
             ))}
         </div>
-
-        {/* Sharing functionality commented out
-        {messages?.length >= 2 ? (
-          <div className="flex h-fit items-center justify-center mb-4">
-            <div className="flex space-x-2">
-              {id && title ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShareDialogOpen(true)}
-                  >
-                    <IconShare className="mr-2" />
-                    Share
-                  </Button>
-                  <ChatShareDialog
-                    open={shareDialogOpen}
-                    onOpenChange={setShareDialogOpen}
-                    onCopy={() => setShareDialogOpen(false)}
-                    shareChat={shareChat}
-                    chat={{
-                      id,
-                      title,
-                      messages: aiState.messages
-                    }}
-                  />
-                </>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-        */}
 
         <div className="pb-4 sm:pb-4">
           <PromptForm input={input} setInput={setInput} />

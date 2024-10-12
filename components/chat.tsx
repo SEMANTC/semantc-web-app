@@ -6,7 +6,6 @@ import { EmptyScreen } from '@/components/empty-screen'
 import { Message } from '@/lib/chat/actions'
 import { useLocalStorage } from '@/lib/hooks/use-local-storage'
 import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
-// import { Session } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useAIState, useUIState } from 'ai/rsc'
 import { usePathname, useRouter } from 'next/navigation'
@@ -15,10 +14,9 @@ import { useEffect, useState } from 'react'
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
   id?: string
-  // session?: Session
 }
 
-export function Chat({ id, className /*, session */ }: ChatProps) {
+export function Chat({ id, className }: ChatProps) {
   const router = useRouter()
   const path = usePathname()
   const [input, setInput] = useState('')
@@ -28,12 +26,10 @@ export function Chat({ id, className /*, session */ }: ChatProps) {
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
 
   useEffect(() => {
-    // if (session?.user) {  // Session check removed
-      if (!path.includes('chat') && messages.length === 1) {
-        window.history.replaceState({}, '', `/chat/${id}`)
-      }
-    // }
-  }, [id, path, /* session?.user, */ messages])
+    if (!path.includes('chat') && messages.length === 1) {
+      window.history.replaceState({}, '', `/chat/${id}`)
+    }
+  }, [id, path, messages])
 
   useEffect(() => {
     const messagesLength = aiState.messages?.length
@@ -51,14 +47,16 @@ export function Chat({ id, className /*, session */ }: ChatProps) {
 
   return (
     <div className={cn('flex flex-col h-full w-full', className)}>
-      <div className="flex-1 overflow-auto w-full" ref={scrollRef}>
-        <div className="max-w-5xl mx-auto" ref={messagesRef}>
-          {messages.length ? (
-            <ChatList messages={messages} isShared={false} />
-          ) : (
-            <EmptyScreen />
-          )}
-          <div ref={visibilityRef} />
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto scrollbar-custom smooth-scroll" ref={scrollRef}>
+          <div className="max-w-5xl mx-auto pb-[200px]" ref={messagesRef}>
+            {messages.length ? (
+              <ChatList messages={messages} isShared={false} />
+            ) : (
+              <EmptyScreen />
+            )}
+            <div ref={visibilityRef} />
+          </div>
         </div>
       </div>
       <ChatPanel

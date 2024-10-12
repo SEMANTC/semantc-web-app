@@ -66,19 +66,11 @@ export function PromptForm({
           // Submit and get response message
           const responseMessage = await submitUserMessage(value)
           setMessages(currentMessages => [...currentMessages, responseMessage])
-        } catch {
+        } catch (error) {
+          console.error('Error submitting message:', error);
           toast(
             <div className="text-red-600">
-              You have reached your message limit! Please try again later, or{' '}
-              <a
-                className="underline"
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://vercel.com/templates/next.js/gemini-ai-chatbot"
-              >
-                deploy your own version
-              </a>
-              .
+              An error occurred while processing your message. Please try again later.
             </div>
           )
         }
