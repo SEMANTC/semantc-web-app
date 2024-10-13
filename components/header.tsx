@@ -15,11 +15,11 @@ function Logo() {
   return (
     <>
       <Link href="/new" rel="nofollow">
-        <img className="size-6" src="/images/gemini.png" alt="gemini logo" />
+        <img className="size-6" src="/images/semantc.png" alt="gemini logo" />
       </Link>
-      <div className="flex items-center">
+      {/* <div className="flex items-center">
         <IconSeparator className="size-6 text-zinc-200" />
-      </div>
+      </div> */}
     </>
   )
 }

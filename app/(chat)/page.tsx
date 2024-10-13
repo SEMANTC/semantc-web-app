@@ -5,7 +5,7 @@ import { AI } from '@/lib/chat/actions'
 import { Session } from '@/lib/types'
 
 export const metadata = {
-  title: 'SEMANTC AI ASSISTANT',
+  title: 'Semantc Analytics',
 }
 
 export default async function IndexPage() {

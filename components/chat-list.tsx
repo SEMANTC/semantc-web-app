@@ -1,7 +1,7 @@
 import { UIState } from '@/lib/chat/actions'
 // import { Session } from '@/lib/types'
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
-import Link from 'next/link'
+// import { ExclamationTriangleIcon } from '@radix-ui/react-icons'
+// import Link from 'next/link'
 
 export interface ChatList {
   messages: UIState

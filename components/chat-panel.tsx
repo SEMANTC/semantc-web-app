@@ -36,13 +36,13 @@ export function ChatPanel({
   const exampleMessages = [
     {
       heading: '',
-      subheading: 'accounts with the highest number of payments?',
-      message: `Which accounts have the highest number of payments?`
+      subheading: 'account with the highest number of payments?',
+      message: `accounts with the highest number of payments?`
     },
     {
       heading: '',
-      subheading: 'list my active account only',
-      message: 'name of active accounts'
+      subheading: 'list my active accounts only',
+      message: 'list my active accounts only'
     }
   ]
 
