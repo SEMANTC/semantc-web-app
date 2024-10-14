@@ -84,7 +84,13 @@ async function submitUserMessage(content: string) {
     console.log('Received response from Cloud Run:', result)
 
     spinnerStream.done(null)
-    messageStream.update(<BotMessage content={result.message} />)
+
+    // Include SQL query in the message if it exists
+    const responseContent = result.sql_query ? 
+      `${result.message}\n\nSQL Query:\n\`\`\`sql\n${result.sql_query}\n\`\`\`` : 
+      result.message;
+
+    messageStream.update(<BotMessage content={responseContent} />)
 
     aiState.update({
       ...aiState.get(),
@@ -93,7 +99,7 @@ async function submitUserMessage(content: string) {
         {
           id: nanoid(),
           role: 'assistant',
-          content: result.message
+          content: responseContent
         }
       ]
     })
