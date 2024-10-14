@@ -13,7 +13,7 @@ export default async function IndexPage() {
   // const session = (await auth()) as Session
 
   return (
-    <AI initialAIState={{ chatId: id, messages: [] }}>
+    <AI initialAIState={{ chatId: id, messages: [], processingState: 'idle' }}>
       <Chat id={id} />
     </AI>
   )

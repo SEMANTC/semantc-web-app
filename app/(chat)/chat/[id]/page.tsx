@@ -52,7 +52,8 @@ export default async function ChatPage({ params }: ChatPageProps) {
     <AI
       initialAIState={{
         chatId: chat.id,
-        messages: chat.messages
+        messages: chat.messages,
+        processingState: 'idle' // or any appropriate initial state
       }}
     >
       <Chat
