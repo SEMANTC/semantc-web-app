@@ -32,6 +32,7 @@ export function ChatPanel({
   const [aiState] = useAIState()
   const [messages, setMessages] = useUIState<typeof AI>()
   const { submitUserMessage } = useActions()
+  const [isLoading, setIsLoading] = React.useState(false)
 
   const exampleMessages = [
     {
@@ -45,6 +46,30 @@ export function ChatPanel({
       message: 'list my active accounts only'
     }
   ]
+
+  const handleSubmit = React.useCallback(async (value: string) => {
+    setIsLoading(true)
+    setMessages(currentMessages => [
+      ...currentMessages,
+      {
+        id: nanoid(),
+        display: <UserMessage>{value}</UserMessage>
+      }
+    ])
+
+    try {
+      const responseMessage = await submitUserMessage(value)
+      setMessages(currentMessages => [...currentMessages, responseMessage])
+    } catch {
+      toast(
+        <div className="text-red-600">
+          An error occurred. Please try again later.
+        </div>
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }, [setMessages, submitUserMessage])
 
   return (
     <div className="fixed inset-x-0 bottom-0 bg-gradient-to-b from-muted/10 from-10% to-muted/30 to-50% z-10">
@@ -63,32 +88,7 @@ export function ChatPanel({
                   'cursor-pointer bg-zinc-50 text-zinc-950 rounded-2xl p-4 sm:p-6 hover:bg-zinc-100 transition-colors',
                   index > 1 && 'hidden md:block'
                 )}
-                onClick={async () => {
-                  setMessages(currentMessages => [
-                    ...currentMessages,
-                    {
-                      id: nanoid(),
-                      display: <UserMessage>{example.message}</UserMessage>
-                    }
-                  ])
-
-                  try {
-                    const responseMessage = await submitUserMessage(
-                      example.message
-                    )
-
-                    setMessages(currentMessages => [
-                      ...currentMessages,
-                      responseMessage
-                    ])
-                  } catch {
-                    toast(
-                      <div className="text-red-600">
-                        An error occurred. Please try again later.
-                      </div>
-                    )
-                  }
-                }}
+                onClick={() => handleSubmit(example.message)}
               >
                 <div className="font-medium">{example.heading}</div>
                 {example.subheading && (
@@ -101,7 +101,12 @@ export function ChatPanel({
         </div>
 
         <div className="pb-4 sm:pb-4">
-          <PromptForm input={input} setInput={setInput} />
+          <PromptForm 
+            input={input} 
+            setInput={setInput} 
+            isLoading={isLoading}
+            onSubmit={handleSubmit}
+          />
           <FooterText className="hidden sm:block mt-2" />
         </div>
       </div>

@@ -20,15 +20,17 @@ import { toast } from 'sonner'
 
 export function PromptForm({
   input,
-  setInput
+  setInput,
+  isLoading,
+  onSubmit
 }: {
   input: string
   setInput: (value: string) => void
+  isLoading: boolean
+  onSubmit: (value: string) => Promise<void>
 }) {
   const { formRef, onKeyDown } = useEnterSubmit()
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
-  const { submitUserMessage, describeImage } = useActions()
-  const [_, setMessages] = useUIState<typeof AI>()
 
   React.useEffect(() => {
     if (inputRef.current) {
@@ -36,97 +38,33 @@ export function PromptForm({
     }
   }, [])
 
-  const fileRef = React.useRef<HTMLInputElement>(null)
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    if (isLoading) return
+
+    const value = input.trim()
+    if (!value) return
+
+    setInput('')
+    await onSubmit(value)
+  }
 
   return (
     <form
       ref={formRef}
-      onSubmit={async (e: any) => {
-        e.preventDefault()
-
-        // Blur focus on mobile
-        if (window.innerWidth < 600) {
-          e.target['message']?.blur()
-        }
-
-        const value = input.trim()
-        setInput('')
-        if (!value) return
-
-        // Optimistically add user message UI
-        setMessages(currentMessages => [
-          ...currentMessages,
-          {
-            id: nanoid(),
-            display: <UserMessage>{value}</UserMessage>
-          }
-        ])
-
-        try {
-          // Submit and get response message
-          const responseMessage = await submitUserMessage(value)
-          setMessages(currentMessages => [...currentMessages, responseMessage])
-        } catch (error) {
-          console.error('Error submitting message:', error);
-          toast(
-            <div className="text-red-600">
-              An error occurred while processing your message. Please try again later.
-            </div>
-          )
-        }
-      }}
+      onSubmit={handleSubmit}
     >
-      <input
-        type="file"
-        className="hidden"
-        id="file"
-        ref={fileRef}
-        onChange={async event => {
-          if (!event.target.files) {
-            toast.error('No file selected')
-            return
-          }
-
-          const file = event.target.files[0]
-
-          if (file.type.startsWith('video/')) {
-            const responseMessage = await describeImage('')
-            setMessages(currentMessages => [
-              ...currentMessages,
-              responseMessage
-            ])
-          } else {
-            const reader = new FileReader()
-            reader.readAsDataURL(file)
-
-            reader.onloadend = async () => {
-              const base64String = reader.result
-              const responseMessage = await describeImage(base64String)
-              setMessages(currentMessages => [
-                ...currentMessages,
-                responseMessage
-              ])
-            }
-          }
-        }}
-      />
       <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-zinc-100 px-12 sm:rounded-full sm:px-12">
-        {/* <Tooltip>
-          <TooltipTrigger asChild> */}
         <Button
           variant="outline"
           size="icon"
           className="absolute left-4 top-[14px] size-8 rounded-full bg-background p-0 sm:left-4"
-          onClick={() => {
-            fileRef.current?.click()
-          }}
+          disabled={isLoading}
         >
           <IconPlus />
           <span className="sr-only">New Chat</span>
         </Button>
-        {/* </TooltipTrigger>
-          <TooltipContent>Add Attachments</TooltipContent>
-        </Tooltip> */}
         <Textarea
           ref={inputRef}
           tabIndex={0}
@@ -148,7 +86,7 @@ export function PromptForm({
               <Button
                 type="submit"
                 size="icon"
-                disabled={input === ''}
+                disabled={isLoading || input.trim() === ''}
                 className="bg-transparent shadow-none text-zinc-950 rounded-full hover:bg-zinc-200"
               >
                 <IconArrowElbow />

@@ -19,6 +19,14 @@ if (!CLOUD_RUN_API_URL) {
   throw new Error('CLOUD_RUN_API_URL is not set in the environment variables')
 }
 
+export type ProcessingState = 'idle' | 'processing' | 'understanding' | 'querying' | 'answering';
+
+export type AIState = {
+  chatId: string
+  messages: Message[]
+  processingState: ProcessingState
+}
+
 async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
   const fullUrl = `${CLOUD_RUN_API_URL}${endpoint}`;
   console.log(`Calling Cloud Run API: ${fullUrl}`);
@@ -54,6 +62,11 @@ async function submitUserMessage(content: string) {
 
   const aiState = getMutableAIState()
 
+  aiState.update({
+    ...aiState.get(),
+    processingState: 'processing'
+  })
+
   const newMessage = {
     id: nanoid(),
     role: 'user',
@@ -65,7 +78,8 @@ async function submitUserMessage(content: string) {
     messages: [
       ...aiState.get().messages,
       newMessage
-    ]
+    ],
+    processingState: 'understanding'
   })
 
   const history = aiState.get().messages.map((message: Message) => ({
@@ -79,9 +93,12 @@ async function submitUserMessage(content: string) {
   try {
     console.log('Sending request to Cloud Run:', JSON.stringify({ messages: history }))
 
+    aiState.update({ ...aiState.get(), processingState: 'querying' })
     const result = await callCloudRunAPI('/api/chat', 'POST', { messages: history })
 
     console.log('Received response from Cloud Run:', result)
+
+    aiState.update({ ...aiState.get(), processingState: 'answering' })
 
     spinnerStream.done(null)
 
@@ -101,7 +118,8 @@ async function submitUserMessage(content: string) {
           role: 'assistant',
           content: responseContent
         }
-      ]
+      ],
+      processingState: 'idle'
     })
 
     messageStream.done()
@@ -111,6 +129,7 @@ async function submitUserMessage(content: string) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred'
     messageStream.update(<BotMessage content={`Error: ${errorMessage}`} />)
     spinnerStream.done(null)
+    aiState.update({ ...aiState.get(), processingState: 'idle' })
   }
 
   return {
@@ -123,11 +142,6 @@ export type Message = {
   role: 'user' | 'assistant' | 'system'
   content: string
   id: string
-}
-
-export type AIState = {
-  chatId: string
-  messages: Message[]
 }
 
 export type UIState = {
@@ -149,7 +163,7 @@ export const AI = createAI<AIState, UIState>({
     submitUserMessage
   },
   initialUIState: [],
-  initialAIState: { chatId: nanoid(), messages: [] },
+  initialAIState: { chatId: nanoid(), messages: [], processingState: 'idle' },
   onGetUIState: async () => {
     'use server'
 
