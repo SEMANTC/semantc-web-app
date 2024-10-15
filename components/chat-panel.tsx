@@ -36,23 +36,22 @@ export function ChatPanel({
     {
       heading: '',
       subheading:
-        'How do I calculate earnings per share from income statement data?',
-      message: `How do I calculate earnings per share from income statement data?
-`
+        'How many accounts do i have in Xero?',
+      message: `How many accounts do i have in Xero?`
     },
     {
       heading: '',
       subheading:
-        'How can I analyze trends in revenue and expenses over multiple years?',
+        'Which customers have the highest outstanding invoice amounts?',
       message:
-        'How can I analyze trends in revenue and expenses over multiple years?'
+        'Which customers have the highest outstanding invoice amounts?'
     },
     {
       heading: '',
       subheading:
-        'Can you walk through how to build a financial forecast model in Excel?',
+        'How many payments are being missed or delayed based on due dates?',
       message:
-        'Can you walk through how to build a financial forecast model in Excel?'
+        'How many payments are being missed or delayed based on due dates?'
     }
   ]
 
