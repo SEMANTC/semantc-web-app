@@ -97,7 +97,7 @@ export function ChatPanel({
               <div
                 key={example.heading}
                 className={cn(
-                  'cursor-pointer border shadow-sm rounded-2xl p-4 sm:p-6 hover:bg-zinc-100 transition-colors',
+                  'cursor-pointer border shadow-sm rounded-2xl p-4 hover:bg-zinc-100 transition-colors',
                   index > 1 && 'hidden md:block'
                 )}
                 onClick={() => handleSubmit(example.message)}
