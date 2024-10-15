@@ -2,7 +2,6 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { GoogleIcon, IconGemini, IconUser } from '@/components/ui/icons'
 import { cn } from '@/lib/utils'
 import { spinner } from './spinner'
 import { CodeBlock } from '../ui/codeblock'
@@ -16,11 +15,8 @@ import { useStreamableText } from '@/lib/hooks/use-streamable-text'
 
 export function UserMessage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="group relative flex items-start md:-ml-12">
-      <div className="bg-background flex size-[25px] shrink-0 select-none items-center justify-center rounded-lg border shadow-sm">
-        <IconUser />
-      </div>
-      <div className="ml-4 flex-1 space-y-2 overflow-hidden pl-2">
+    <div className="relative flex md:-ml-12 ml-4 justify-end space-y-2 overflow-hidden ">
+      <div className="py-2.5 px-5 bg-zinc-100 rounded-3xl max-w-[70%]">
         {children}
       </div>
     </div>
@@ -38,10 +34,14 @@ export function BotMessage({
 
   return (
     <div className={cn('group relative flex items-start md:-ml-12', className)}>
-      <div className="bg-background flex size-[25px] shrink-0 select-none items-center justify-center rounded-lg border shadow-sm">
-        <img className="size-6" src="/images/semantc.png" alt="semantc logo" />
+      <div className="bg-[#222] flex size-[25px] shrink-0 select-none items-center overflow-hidden justify-center rounded-3xl">
+        <img
+          className="size-6"
+          src="/images/semantc-icon.png"
+          alt="Semantc icon logo"
+        />
       </div>
-      <div className="ml-4 flex-1 space-y-2 overflow-hidden px-1">
+      <div className="ml-4 flex-1 space-y-2 overflow-hidden pl-6 pr-1">
         <MemoizedReactMarkdown
           className="prose break-words dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
           remarkPlugins={[remarkGfm, remarkMath]}
@@ -99,11 +99,15 @@ export function BotCard({
     <div className="group relative flex items-start md:-ml-12">
       <div
         className={cn(
-          'bg-background flex size-[25px] shrink-0 select-none items-center justify-center rounded-lg border shadow-sm',
+          'bg-[#222] flex size-[25px] shrink-0 select-none items-center justify-center rounded-full',
           !showAvatar && 'invisible'
         )}
       >
-        <img className="size-6" src="/images/semantc.png" alt="semantc logo" />
+        <img
+          className="size-6"
+          src="/images/semantc-icon.png"
+          alt="Semantc icon logo"
+        />
       </div>
       <div className="ml-4 flex-1 pl-2">{children}</div>
     </div>
@@ -125,8 +129,12 @@ export function SystemMessage({ children }: { children: React.ReactNode }) {
 export function SpinnerMessage() {
   return (
     <div className="group relative flex items-start md:-ml-12">
-      <div className="bg-background flex size-[25px] shrink-0 select-none items-center justify-center rounded-lg border shadow-sm">
-        <img className="size-6" src="/images/semantc.png" alt="semantc logo" />
+      <div className="bg-[#222] flex size-[25px] shrink-0 select-none items-center justify-center rounded-3xl overflow-hidden">
+        <img
+          className="size-6"
+          src="/images/semantc-icon.png"
+          alt="Semantc icon logo"
+        />
       </div>
       <div className="ml-4 h-[24px] flex flex-row items-center flex-1 space-y-2 overflow-hidden px-1">
         {spinner}
