@@ -47,16 +47,14 @@ export function Chat({ id, className }: ChatProps) {
 
   return (
     <div className={cn('flex flex-col h-full w-full', className)}>
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto scrollbar-custom smooth-scroll" ref={scrollRef}>
-          <div className="max-w-5xl mx-auto pb-[200px]" ref={messagesRef}>
-            {messages.length ? (
-              <ChatList messages={messages} isShared={false} />
-            ) : (
-              <EmptyScreen />
-            )}
-            <div ref={visibilityRef} />
-          </div>
+      <div className="flex-1 overflow-auto w-full" ref={scrollRef}>
+        <div className="max-w-5xl mx-auto pb-80" ref={messagesRef}>
+          {messages.length ? (
+            <ChatList messages={messages} isShared={false} />
+          ) : (
+            <EmptyScreen />
+          )}
+          <div ref={visibilityRef} />
         </div>
       </div>
       <ChatPanel

@@ -8,7 +8,6 @@ import { useActions, useUIState } from 'ai/rsc'
 import { UserMessage } from './stocks/message'
 import { type AI } from '@/lib/chat/actions'
 import { Button } from '@/components/ui/button'
-import { IconArrowElbow, IconPlus } from '@/components/ui/icons'
 import {
   Tooltip,
   TooltipContent,
@@ -17,6 +16,7 @@ import {
 import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
+import { ArrowUp } from 'lucide-react'
 
 export function PromptForm({
   input,
@@ -51,12 +51,9 @@ export function PromptForm({
   }
 
   return (
-    <form
-      ref={formRef}
-      onSubmit={handleSubmit}
-    >
-      <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-zinc-100 px-12 sm:rounded-full sm:px-12">
-        <Button
+    <form ref={formRef} onSubmit={handleSubmit}>
+      <div className="relative flex max-h-60 w-full grow flex-col overflow-hidden bg-zinc-100 pl-4 pr-12 rounded-[26px]">
+        {/* <Button
           variant="outline"
           size="icon"
           className="absolute left-4 top-[14px] size-8 rounded-full bg-background p-0 sm:left-4"
@@ -64,13 +61,13 @@ export function PromptForm({
         >
           <IconPlus />
           <span className="sr-only">New Chat</span>
-        </Button>
+        </Button> */}
         <Textarea
           ref={inputRef}
           tabIndex={0}
           onKeyDown={onKeyDown}
-          placeholder="Send a message."
-          className="min-h-[60px] w-full bg-transparent placeholder:text-zinc-900 resize-none px-4 py-[1.3rem] focus-within:outline-none sm:text-sm"
+          placeholder="Send a message"
+          className="min-h-14 w-full bg-transparent placeholder:text-zinc-500 resize-none px-4 py-4 focus-within:outline-none "
           autoFocus
           spellCheck={false}
           autoComplete="off"
@@ -80,16 +77,16 @@ export function PromptForm({
           value={input}
           onChange={e => setInput(e.target.value)}
         />
-        <div className="absolute right-4 top-[13px] sm:right-4">
+        <div className="absolute right-4 bottom-[10px] sm:right-3">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 type="submit"
                 size="icon"
                 disabled={isLoading || input.trim() === ''}
-                className="bg-transparent shadow-none text-zinc-950 rounded-full hover:bg-zinc-200"
+                className={`shadow-none text-white rounded-full ${isLoading || input.trim() === '' ? 'bg-zinc-400' : 'bg-zinc-900 hover:bg-zinc-700'}`}
               >
-                <IconArrowElbow />
+                <ArrowUp className="size-5" />
                 <span className="sr-only">Send message</span>
               </Button>
             </TooltipTrigger>

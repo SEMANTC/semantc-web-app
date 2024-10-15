@@ -13,14 +13,7 @@ export function FooterText({ className, ...props }: React.ComponentProps<'p'>) {
       {...props}
     >
       AI Assistant built with{' '}
-      <ExternalLink href="https://semantc.com">
-        Semantc Technology
-      </ExternalLink>
-      {/* , <ExternalLink href="https://nextjs.org">Next.js</ExternalLink> and{' '}
-      <ExternalLink href="https://github.com/vercel/ai">
-        Vercel AI SDK
-      </ExternalLink> */}
-      .
+      <ExternalLink href="https://semantc.com">Semantc Technology</ExternalLink>
     </p>
   )
 }
