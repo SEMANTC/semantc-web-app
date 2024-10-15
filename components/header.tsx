@@ -15,7 +15,7 @@ function Logo() {
   return (
     <>
       <Link href="/new" rel="nofollow">
-        <img className="size-6" src="/images/semantc.png" alt="gemini logo" />
+        <img className="w-auto h-5" src="/images/logo.png" alt="Semantc logo" />
       </Link>
       {/* <div className="flex items-center">
         <IconSeparator className="size-6 text-zinc-200" />
