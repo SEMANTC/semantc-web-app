@@ -36,8 +36,8 @@ export function ChatPanel({
     {
       heading: '',
       subheading:
-        'How many accounts do i have in Xero?',
-      message: `How many accounts do i have in Xero?`
+        'How many accounts do I have in Xero?',
+      message: `How many accounts do I have in Xero?`
     },
     {
       heading: '',
