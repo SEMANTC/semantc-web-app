@@ -1,4 +1,4 @@
-import 'server-only'
+import 'server-only' 
 
 import {
   createAI,
@@ -11,7 +11,7 @@ import { BotMessage, UserMessage, SpinnerMessage } from '@/components/stocks/mes
 import { nanoid } from '@/lib/utils'
 import { saveChat } from '@/app/actions'
 import { Chat } from '@/lib/types'
-import { auth } from '@/auth'
+// import { auth } from '@/auth'  // Commented out auth import
 
 const CLOUD_RUN_API_URL = process.env.CLOUD_RUN_API_URL
 
@@ -102,7 +102,6 @@ async function submitUserMessage(content: string) {
 
     spinnerStream.done(null)
 
-    // Include SQL query in the message if it exists
     const responseContent = result.sql_query ? 
       `${result.message}\n\nSQL Query:\n\`\`\`sql\n${result.sql_query}\n\`\`\`` : 
       result.message;
@@ -167,6 +166,8 @@ export const AI = createAI<AIState, UIState>({
   onGetUIState: async () => {
     'use server'
 
+    // Commented out auth-related code
+    /*
     const session = await auth()
 
     if (session && session.user) {
@@ -181,15 +182,28 @@ export const AI = createAI<AIState, UIState>({
         }))
       }
     }
+    */
+
+    // Return messages directly without auth check
+    const aiState = getAIState()
+    if (aiState) {
+      return aiState.messages.map((message: Message, index: number) => ({
+        id: `${aiState.chatId}-${index}`,
+        display: message.role === 'user' 
+          ? <UserMessage>{message.content}</UserMessage>
+          : <BotMessage content={message.content} />
+      }))
+    }
   },
   onSetAIState: async ({ state }) => {
     'use server'
 
+    // Commented out auth-related code
+    /*
     const session = await auth()
 
     if (session && session.user) {
       const { chatId, messages } = state
-
       const createdAt = new Date()
       const userId = session.user.id as string
       const path = `/chat/${chatId}`
@@ -210,5 +224,27 @@ export const AI = createAI<AIState, UIState>({
         console.error('Error saving chat:', error)
       }
     }
+    */
+
+    // Basic state handling without auth
+    const { chatId, messages } = state
+    const createdAt = new Date()
+    const path = `/chat/${chatId}`
+    const title = messages[0]?.content.substring(0, 100) || 'New Chat'
+
+    const chat: Chat = {
+      id: chatId,
+      title,
+      userId: 'anonymous', // Default value since we removed auth
+      createdAt,
+      messages,
+      path
+    }
+
+    // try {
+    //   await saveChat(chat)
+    // } catch (error) {
+    //   console.error('Error saving chat:', error)
+    // }
   }
 })
