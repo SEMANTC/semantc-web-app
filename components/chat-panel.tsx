@@ -1,5 +1,4 @@
 import * as React from 'react'
-
 import { shareChat } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { PromptForm } from '@/components/prompt-form'
@@ -39,7 +38,6 @@ export function ChatPanel({
   const handleSubmit = async (userMessage: string) => {
     setIsLoading(true)
     try {
-      // Add user message and spinner
       setMessages(currentMessages => [
         ...currentMessages,
         {
@@ -52,10 +50,8 @@ export function ChatPanel({
         }
       ])
 
-      // Get response
       const responseMessage = await submitUserMessage(userMessage)
 
-      // Remove spinner and add response
       setMessages(currentMessages => 
         currentMessages
           .filter(msg => msg.display && 
@@ -64,9 +60,11 @@ export function ChatPanel({
           )
           .concat(responseMessage)
       )
+      
+      // Scroll to bottom after new message
+      scrollToBottom()
     } catch (error) {
       console.error('Error:', error)
-      // Remove spinner on error
       setMessages(currentMessages => 
         currentMessages.filter(msg => msg.display && 
           React.isValidElement(msg.display) && 
@@ -80,12 +78,10 @@ export function ChatPanel({
 
   const exampleMessages = [
     {
-      // heading: '',
       subheading: 'list my last 5 bank transactions',
       message: `list my last 5 bank transactions`
     },
     {
-      // heading: '',
       subheading: 'list overstanding invoices this month',
       message: 'list overstanding invoices this month'
     }
@@ -93,19 +89,23 @@ export function ChatPanel({
 
   return (
     <div className="fixed inset-x-0 bg-white/90 bottom-0 w-full duration-300 ease-in-out peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px] dark:from-10%">
+      <ButtonScrollToBottom
+        isAtBottom={isAtBottom}
+        scrollToBottom={scrollToBottom}
+      />
+      
       <div className="mx-auto sm:max-w-2xl sm:px-4">
         <div className="mb-4 grid sm:grid-cols-2 gap-2 sm:gap-4 px-4 sm:px-0">
           {messages.length === 0 &&
             exampleMessages.map((example, index) => (
               <div
-                key={example.heading}
+                key={example.subheading}
                 className={cn(
                   'cursor-pointer bg-zinc-50 text-zinc-950 rounded-2xl p-4 sm:p-6 hover:bg-zinc-100 transition-colors',
                   index > 1 && 'hidden md:block'
                 )}
                 onClick={() => handleSubmit(example.message)}
               >
-                <div className="font-medium">{example.heading}</div>
                 <div className="text-sm text-zinc-800">
                   {example.subheading}
                 </div>
