@@ -103,7 +103,8 @@ async function submitUserMessage(content: string) {
     spinnerStream.done(null)
 
     const responseContent = result.sql_query ? 
-      `${result.message}\n\nSQL Query:\n\`\`\`sql\n${result.sql_query}\n\`\`\`` : 
+      `${result.message}`:  
+      // `${result.message}\n\nSQL Query:\n\`\`\`sql\n${result.sql_query}\n\`\`\`` : 
       result.message;
 
     messageStream.update(<BotMessage content={responseContent} />)
