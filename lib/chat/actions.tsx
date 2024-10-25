@@ -29,8 +29,8 @@ export type AIState = {
 
 async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
   const fullUrl = `${CLOUD_RUN_API_URL}${endpoint}`;
-  console.log(`Calling Cloud Run API: ${fullUrl}`);
-  console.log('Request body:', JSON.stringify(body));
+  // console.log(`Calling Cloud Run API: ${fullUrl}`);
+  // console.log('Request body:', JSON.stringify(body));
 
   try {
     const response = await fetch(fullUrl, {
@@ -91,7 +91,7 @@ async function submitUserMessage(content: string) {
   const messageStream = createStreamableUI(null)
 
   try {
-    console.log('Sending request to Cloud Run:', JSON.stringify({ messages: history }))
+    // console.log('Sending request to Cloud Run:', JSON.stringify({ messages: history }))
 
     aiState.update({ ...aiState.get(), processingState: 'querying' })
     const result = await callCloudRunAPI('/api/chat', 'POST', { messages: history })
