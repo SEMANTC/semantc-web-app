@@ -1,43 +1,9 @@
 'use server'
 
-// import { signIn } from '@/auth'
-import { ResultCode, getStringFromBuffer } from '@/lib/utils'
+import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '@/lib/firebase'
+import { ResultCode } from '@/lib/utils'
 import { z } from 'zod'
-// import { kv } from '@vercel/kv'
-import { getUser } from '../login/actions'
-// import { AuthError } from 'next-auth'
-
-export async function createUser(
-  email: string,
-  hashedPassword: string,
-  salt: string
-) {
-  const existingUser = await getUser(email)
-
-  if (existingUser) {
-    return {
-      type: 'error',
-      resultCode: ResultCode.UserAlreadyExists
-    }
-  } else {
-    const user = {
-      id: crypto.randomUUID(),
-      email,
-      password: hashedPassword,
-      salt
-    }
-
-    // Commented out KV storage
-    // await kv.hmset(`user:${email}`, user)
-
-    console.log('Creating user:', user)
-
-    return {
-      type: 'success',
-      resultCode: ResultCode.UserCreated
-    }
-  }
-}
 
 interface Result {
   type: string
@@ -48,68 +14,49 @@ export async function signup(
   _prevState: Result | undefined,
   formData: FormData
 ): Promise<Result | undefined> {
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
+  try {
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
 
-  const parsedCredentials = z
-    .object({
-      email: z.string().email(),
-      password: z.string().min(6)
-    })
-    .safeParse({
-      email,
-      password
-    })
+    const parsedCredentials = z
+      .object({
+        email: z.string().email(),
+        password: z.string().min(6)
+      })
+      .safeParse({
+        email,
+        password
+      })
 
-  if (parsedCredentials.success) {
-    const salt = crypto.randomUUID()
-
-    const encoder = new TextEncoder()
-    const saltedPassword = encoder.encode(password + salt)
-    const hashedPasswordBuffer = await crypto.subtle.digest(
-      'SHA-256',
-      saltedPassword
-    )
-    const hashedPassword = getStringFromBuffer(hashedPasswordBuffer)
+    if (!parsedCredentials.success) {
+      return {
+        type: 'error',
+        resultCode: ResultCode.InvalidCredentials
+      }
+    }
 
     try {
-      const result = await createUser(email, hashedPassword, salt)
-
-      if (result.resultCode === ResultCode.UserCreated) {
-        // Commented out sign in
-        // await signIn('credentials', {
-        //   email,
-        //   password,
-        //   redirect: false
-        // })
+      await createUserWithEmailAndPassword(auth, email, password)
+      return {
+        type: 'success',
+        resultCode: ResultCode.UserCreated
       }
-
-      return result
-    } catch (error) {
-      // if (error instanceof AuthError) {
-      //   switch (error.type) {
-      //     case 'CredentialsSignin':
-      //       return {
-      //         type: 'error',
-      //         resultCode: ResultCode.InvalidCredentials
-      //       }
-      //     default:
-      //       return {
-      //         type: 'error',
-      //         resultCode: ResultCode.UnknownError
-      //       }
-      //   }
-      // } else {
+    } catch (error: any) {
+      if (error.code === 'auth/email-already-in-use') {
         return {
           type: 'error',
-          resultCode: ResultCode.UnknownError
+          resultCode: ResultCode.UserAlreadyExists
         }
-      // }
+      }
+      return {
+        type: 'error',
+        resultCode: ResultCode.UnknownError
+      }
     }
-  } else {
+  } catch (error) {
     return {
       type: 'error',
-      resultCode: ResultCode.InvalidCredentials
+      resultCode: ResultCode.UnknownError
     }
   }
 }
