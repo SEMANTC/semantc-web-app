@@ -1,95 +1,104 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
-import { signup } from '@/app/signup/actions'
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { IconSpinner } from './ui/icons'
-import { getMessageFromCode } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
+import { auth } from "@/lib/firebase"
+import { Poppins } from 'next/font/google'
+
+const poppins = Poppins({ 
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+})
 
 export default function SignupForm() {
   const router = useRouter()
-  const [result, dispatch] = useFormState(signup, undefined)
+  const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
-    if (result) {
-      if (result.type === 'error') {
-        toast.error(getMessageFromCode(result.resultCode))
+  const handleGoogleSignUp = async () => {
+    setIsLoading(true)
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      await signInWithPopup(auth, provider);
+      toast.success('Account created successfully')
+      router.refresh()
+    } catch (error: any) {
+      console.error('Error during Google sign up:', error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        toast.error('Sign up cancelled')
       } else {
-        toast.success(getMessageFromCode(result.resultCode))
-        router.refresh()
+        toast.error(error.message || 'Failed to sign up with Google')
       }
+    } finally {
+      setIsLoading(false)
     }
-  }, [result, router])
+  }
 
   return (
-    <form
-      action={dispatch}
-      className="flex flex-col items-center gap-4 space-y-3"
-    >
-      <div className="w-full flex-1 rounded-xl border bg-white px-6 pb-4 pt-8 shadow-md md:w-96 dark:bg-zinc-950">
-        <h1 className="mb-3 text-2xl font-bold">Sign up for an account!</h1>
-        <div className="w-full">
-          <div>
-            <label
-              className="mb-3 mt-5 block text-xs font-medium text-zinc-400"
-              htmlFor="email"
-            >
-              Email
-            </label>
-            <div className="relative">
-              <input
-                className="peer block w-full rounded-lg border bg-zinc-50 px-2 py-[9px] text-sm outline-none placeholder:text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950"
-                id="email"
-                type="email"
-                name="email"
-                placeholder="Enter your email address"
-                required
-              />
-            </div>
-          </div>
-          <div className="mt-4">
-            <label
-              className="mb-3 mt-5 block text-xs font-medium text-zinc-400"
-              htmlFor="password"
-            >
-              Password
-            </label>
-            <div className="relative">
-              <input
-                className="peer block w-full rounded-lg border bg-zinc-50 px-2 py-[9px] text-sm outline-none placeholder:text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950"
-                id="password"
-                type="password"
-                name="password"
-                placeholder="Enter password"
-                required
-                minLength={6}
-              />
-            </div>
-          </div>
-        </div>
-        <LoginButton />
+    <div className="flex flex-col items-center gap-4 space-y-3">
+      <div className="w-full flex-1 border bg-white px-6 pb-4 pt-8 shadow-md md:w-96 dark:bg-zinc-950">
+        <button
+          onClick={handleGoogleSignUp}
+          disabled={isLoading}
+          type="button"
+          className={`${poppins.className} flex h-10 w-full flex-row items-center justify-center gap-2 border bg-white p-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:bg-zinc-950 dark:hover:bg-zinc-900`}
+        >
+          {isLoading ? (
+            <IconSpinner />
+          ) : (
+            <>
+              <svg viewBox="0 0 24 24" className="h-5 w-5">
+                <path
+                  d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.28027 6.60998L5.27028 9.70498C6.21525 6.86002 8.87028 4.75 12.0003 4.75Z"
+                  fill="#EA4335"
+                />
+                <path
+                  d="M23.49 12.275C23.49 11.49 23.415 10.73 23.3 10H12V14.51H18.47C18.18 15.99 17.34 17.25 16.08 18.1L19.945 21.1C22.2 19.01 23.49 15.92 23.49 12.275Z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M5.26498 14.2949C5.02498 13.5699 4.88501 12.7999 4.88501 11.9999C4.88501 11.1999 5.01998 10.4299 5.26498 9.7049L1.275 6.60986C0.46 8.22986 0 10.0599 0 11.9999C0 13.9399 0.46 15.7699 1.28 17.3899L5.26498 14.2949Z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12.0004 24.0001C15.2404 24.0001 17.9654 22.935 19.9454 21.095L16.0804 18.095C15.0054 18.82 13.6204 19.245 12.0004 19.245C8.8704 19.245 6.21537 17.135 5.2654 14.29L1.27539 17.385C3.25539 21.31 7.3104 24.0001 12.0004 24.0001Z"
+                  fill="#34A853"
+                />
+              </svg>
+              Continue with Google
+            </>
+          )}
+        </button>
+
+        <p className={`${poppins.className} mt-4 text-center text-sm text-zinc-500`}>
+          By signing up, you agree to our{' '}
+          <Link 
+            href="/terms" 
+            className={`${poppins.className} font-medium text-zinc-800 hover:underline dark:text-zinc-200`}
+          >
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link 
+            href="/privacy" 
+            className={`${poppins.className} font-medium text-zinc-800 hover:underline dark:text-zinc-200`}
+          >
+            Privacy Policy
+          </Link>
+        </p>
       </div>
 
       <Link href="/login" className="flex flex-row gap-1 text-sm text-zinc-400">
-        Already have an account?
-        <div className="font-semibold underline">Log in</div>
+        <span className={poppins.className}>Already have an account?</span>{' '}
+        <div className={`${poppins.className} font-semibold underline`}>Log in</div>
       </Link>
-    </form>
-  )
-}
-
-function LoginButton() {
-  const { pending } = useFormStatus()
-
-  return (
-    <button
-      className="my-4 flex h-10 w-full flex-row items-center justify-center rounded-lg bg-zinc-900 p-2 text-sm font-semibold text-zinc-100 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-      aria-disabled={pending}
-    >
-      {pending ? <IconSpinner /> : 'Create account'}
-    </button>
+    </div>
   )
 }

@@ -1,18 +1,9 @@
 'use server'
 
-// import { signIn } from '@/auth'
-import { User } from '@/lib/types'
-// import { AuthError } from 'next-auth'
-import { z } from 'zod'
-// import { kv } from '@vercel/kv'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '@/lib/firebase'
 import { ResultCode } from '@/lib/utils'
-
-export async function getUser(email: string) {
-  // const user = await kv.hgetall<User>(`user:${email}`)
-  // return user
-  console.log('Getting user:', email)
-  return null // For now, always return null to simulate no user found
-}
+import { z } from 'zod'
 
 interface Result {
   type: string
@@ -37,40 +28,32 @@ export async function authenticate(
         password
       })
 
-    if (parsedCredentials.success) {
-      // Commented out authentication logic
-      // await signIn('credentials', {
-      //   email,
-      //   password,
-      //   redirect: false
-      // })
-
-      // For now, always return success
-      return {
-        type: 'success',
-        resultCode: ResultCode.UserLoggedIn
-      }
-    } else {
+    if (!parsedCredentials.success) {
       return {
         type: 'error',
         resultCode: ResultCode.InvalidCredentials
       }
     }
+
+    try {
+      await signInWithEmailAndPassword(auth, email as string, password as string)
+      return {
+        type: 'success',
+        resultCode: ResultCode.UserLoggedIn
+      }
+    } catch (error: any) {
+      if (error.code === 'auth/invalid-credential') {
+        return {
+          type: 'error',
+          resultCode: ResultCode.InvalidCredentials
+        }
+      }
+      return {
+        type: 'error',
+        resultCode: ResultCode.UnknownError
+      }
+    }
   } catch (error) {
-    // if (error instanceof AuthError) {
-    //   switch (error.type) {
-    //     case 'CredentialsSignin':
-    //       return {
-    //         type: 'error',
-    //         resultCode: ResultCode.InvalidCredentials
-    //       }
-    //     default:
-    //       return {
-    //         type: 'error',
-    //         resultCode: ResultCode.UnknownError
-    //       }
-    //   }
-    // }
     return {
       type: 'error',
       resultCode: ResultCode.UnknownError

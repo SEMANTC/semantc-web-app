@@ -1,13 +1,26 @@
-import { auth } from '@/auth'
+'use client'
+
 import LoginForm from '@/components/login-form'
-import { Session } from '@/lib/types'
-import { redirect } from 'next/navigation'
+import { useAuth } from '@/lib/context/auth'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
-export default async function LoginPage() {
-  const session = (await auth()) as Session
+export default function LoginPage() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
 
-  if (session) {
-    redirect('/')
+  useEffect(() => {
+    if (user) {
+      router.push('/')
+    }
+  }, [user, router])
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-zinc-500">Loading...</div>
+      </div>
+    )
   }
 
   return (

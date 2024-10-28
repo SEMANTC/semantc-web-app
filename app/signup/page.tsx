@@ -1,18 +1,27 @@
-import { auth } from '@/auth'
+'use client'
+
 import SignupForm from '@/components/signup-form'
-import { Session } from '@/lib/types'
-import { redirect } from 'next/navigation'
+import { useAuth } from '@/lib/context/auth'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
-export default async function SignupPage() {
-  const session = (await auth()) as Session
+export default function SignupPage() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
 
-  if (session) {
-    redirect('/')
+  useEffect(() => {
+    if (user) {
+      router.push('/')
+    }
+  }, [user, router])
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-zinc-500">Loading...</div>
+      </div>
+    )
   }
 
-  return (
-    <main className="flex flex-col p-4">
-      <SignupForm />
-    </main>
-  )
+  return <SignupForm />
 }

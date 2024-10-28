@@ -8,15 +8,13 @@ const WINDOW_SIZE = 60 * 60 * 1000 // 1 hour in milliseconds
 const rateLimit = new Map<string, { count: number; timestamp: number }>()
 
 export async function middleware(req: NextRequest, ev: NextFetchEvent) {
+  // Rate limiting for POST requests
   if (req.method === 'POST') {
     const realIp = req.headers.get('x-real-ip') || req.ip || 'no-ip'
     const now = Date.now()
-
-    // Simple in-memory rate limiting
     const userRateLimit = rateLimit.get(realIp) || { count: 0, timestamp: now }
 
     if (now - userRateLimit.timestamp > WINDOW_SIZE) {
-      // Reset if the window has passed
       userRateLimit.count = 1
       userRateLimit.timestamp = now
     } else {
@@ -34,11 +32,18 @@ export async function middleware(req: NextRequest, ev: NextFetchEvent) {
     }
   }
 
-  // Authentication check removed
-  // const session = await auth()
-  // if (!session?.user && !req.nextUrl.pathname.startsWith('/login')) {
-  //   return NextResponse.redirect(new URL('/login', req.url))
-  // }
+  // Auth check
+  const authCookie = req.cookies.get('__firebase_auth_token')
+  const { pathname } = req.nextUrl
+
+  // Define public routes
+  const isPublicRoute = pathname.startsWith('/login') || 
+                       pathname.startsWith('/signup') ||
+                       pathname.startsWith('/reset-password')
+
+  if (!authCookie && !isPublicRoute && !pathname.startsWith('/api')) {
+    return NextResponse.redirect(new URL('/login', req.url))
+  }
 
   return NextResponse.next()
 }

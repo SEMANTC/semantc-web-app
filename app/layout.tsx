@@ -7,6 +7,7 @@ import { TailwindIndicator } from '@/components/tailwind-indicator'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 import { Toaster } from '@/components/ui/sonner'
+import { AuthProvider } from '@/lib/context/auth'
 
 const spaceGrotesk = Space_Grotesk({ 
   subsets: ['latin'],
@@ -49,18 +50,20 @@ export default function RootLayout({ children }: RootLayoutProps) {
         )}
       >
         <Toaster position="top-center" />
-        <Providers
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex flex-col flex-1">{children}</main>
-          </div>
-          <TailwindIndicator />
-        </Providers>
+        <AuthProvider>
+          <Providers
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <main className="flex flex-col flex-1">{children}</main>
+            </div>
+            <TailwindIndicator />
+          </Providers>
+        </AuthProvider>
       </body>
     </html>
   )
