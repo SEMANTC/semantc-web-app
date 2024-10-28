@@ -1,5 +1,5 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,9 +14,7 @@ const firebaseConfig = {
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// connect to Auth Emulator in development
-if (process.env.NEXT_PUBLIC_EMULATOR_HOST) {
-  connectAuthEmulator(auth, `http://${process.env.NEXT_PUBLIC_EMULATOR_HOST}:9099`);
-}
+// set persistence to LOCAL (survives browser restarts)
+setPersistence(auth, browserLocalPersistence).catch(console.error);
 
 export { app, auth };

@@ -32,22 +32,10 @@ export async function middleware(req: NextRequest, ev: NextFetchEvent) {
     }
   }
 
-  // Auth check
-  const authCookie = req.cookies.get('__firebase_auth_token')
-  const { pathname } = req.nextUrl
-
-  // Define public routes
-  const isPublicRoute = pathname.startsWith('/login') || 
-                       pathname.startsWith('/signup') ||
-                       pathname.startsWith('/reset-password')
-
-  if (!authCookie && !isPublicRoute && !pathname.startsWith('/api')) {
-    return NextResponse.redirect(new URL('/login', req.url))
-  }
-
   return NextResponse.next()
 }
 
+// Update matcher to only handle API routes
 export const config = {
-  matcher: ['/', '/chat/:id*', '/share/:id*']
+  matcher: ['/api/:path*']
 }

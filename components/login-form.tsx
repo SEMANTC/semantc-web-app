@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { IconSpinner } from './ui/icons'
 import { useRouter } from 'next/navigation'
@@ -11,7 +11,7 @@ import { Poppins } from 'next/font/google'
 
 const poppins = Poppins({ 
   subsets: ['latin'],
-  weight: ['400', '600'],  // Add the weights you need
+  weight: ['400', '500', '600'],
 })
 
 export default function LoginForm() {
@@ -22,15 +22,22 @@ export default function LoginForm() {
     setIsLoading(true)
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      toast.success('Successfully signed in with Google')
-      router.refresh()
+      const result = await signInWithPopup(auth, provider);
+      
+      // Wait for the auth state to be ready
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      
+      if (result.user) {
+        toast.success('Successfully signed in')
+        // Use replace instead of push to avoid back button issues
+        router.replace('/')
+      }
     } catch (error: any) {
       console.error('Error during Google sign in:', error);
       if (error.code === 'auth/popup-closed-by-user') {
         toast.error('Sign in cancelled')
       } else {
-        toast.error(error.message || 'Failed to sign in with Google');
+        toast.error(error.message || 'Failed to sign in with Google')
       }
     } finally {
       setIsLoading(false)
@@ -44,7 +51,7 @@ export default function LoginForm() {
           onClick={handleGoogleSignIn}
           disabled={isLoading}
           type="button"
-          className="flex h-10 w-full flex-row items-center justify-center gap-2 border bg-white p-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+          className={`${poppins.className} flex h-10 w-full flex-row items-center justify-center gap-2 border bg-white p-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:bg-zinc-950 dark:hover:bg-zinc-900`}
         >
           {isLoading ? (
             <IconSpinner />
