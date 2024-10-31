@@ -25,7 +25,7 @@ function getUserInitials(email: string) {
 }
 
 export function UserMenu() {
-  const { user } = useAuth(); // Get the user from the client-side auth context
+  const { user } = useAuth();
   const router = useRouter();
 
   if (!user) return null;
@@ -36,7 +36,7 @@ export function UserMenu() {
   };
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between font-manrope">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="pl-0">
@@ -46,7 +46,7 @@ export function UserMenu() {
             <span className="ml-2 hidden md:block">{user.email}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent sideOffset={8} align="start" className="w-fit">
+        <DropdownMenuContent sideOffset={8} align="start" className="w-fit font-manrope">
           <DropdownMenuItem className="flex-col items-start">
             <div className="text-xs text-zinc-500">{user.email}</div>
           </DropdownMenuItem>

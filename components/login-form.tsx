@@ -7,9 +7,9 @@ import { IconSpinner } from './ui/icons'
 import { useRouter } from 'next/navigation'
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { auth } from "@/lib/firebase"
-import { Poppins } from 'next/font/google'
+import { Manrope } from 'next/font/google'
 
-const poppins = Poppins({ 
+const manrope = Manrope({ 
   subsets: ['latin'],
   weight: ['400', '500', '600'],
 })
@@ -51,7 +51,7 @@ export default function LoginForm() {
           onClick={handleGoogleSignIn}
           disabled={isLoading}
           type="button"
-          className={`${poppins.className} flex h-10 w-full flex-row items-center justify-center gap-2 border bg-white p-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:bg-zinc-950 dark:hover:bg-zinc-900`}
+          className={`${manrope.className} flex h-10 w-full flex-row items-center justify-center gap-2 border bg-white p-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:bg-zinc-950 dark:hover:bg-zinc-900`}
         >
           {isLoading ? (
             <IconSpinner />
@@ -85,8 +85,8 @@ export default function LoginForm() {
         href="/signup"
         className="flex flex-row gap-1 text-sm text-zinc-400"
       >
-        <span className={poppins.className}>No account yet?</span>{' '}
-        <div className={`${poppins.className} font-semibold underline`}>Sign up</div>
+        <span className={manrope.className}>No account yet?</span>{' '}
+        <div className={`${manrope.className} font-semibold underline`}>Sign up</div>
       </Link>
     </div>
   )

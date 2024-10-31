@@ -1,6 +1,6 @@
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import { Space_Grotesk } from 'next/font/google'
+import { Space_Grotesk, Manrope } from 'next/font/google'
 import '@/app/globals.css'
 import { cn } from '@/lib/utils'
 import { TailwindIndicator } from '@/components/tailwind-indicator'
@@ -14,10 +14,15 @@ const spaceGrotesk = Space_Grotesk({
   variable: '--font-space-grotesk'
 })
 
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-manrope',
+});
+
 export const metadata = {
-  metadataBase: new URL('https://your-app-url.com'),
+  metadataBase: new URL('https://semantc.com'),
   title: {
-    default: 'Next.js AI Chatbot',
+    default: 'SEMANTC AI - Analytics',
     template: `%s - Next.js AI Chatbot`
   },
   description: 'An AI chatbot built with Next.js and Cloud Run',
@@ -41,7 +46,7 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" suppressHydrationWarning className={spaceGrotesk.variable}>
+    <html lang="en" suppressHydrationWarning className={cn(spaceGrotesk.variable, manrope.variable)}>
       <body
         className={cn(
           'font-sans antialiased',

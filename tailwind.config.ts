@@ -20,6 +20,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['var(--font-space-grotesk)', 'var(--font-geist-sans)', 'sans-serif'],
+        manrope: ['var(--font-manrope)', 'sans-serif'],
         mono: ['var(--font-geist-mono)', 'monospace']
       },
       colors: {
