@@ -1,41 +1,68 @@
-'use client'
+// lib/context/auth.tsx
+'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { onAuthStateChanged, User } from 'firebase/auth'
-import { auth } from '../firebase'
+import { createContext, useContext, useEffect, useState } from 'react';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from '../firebase';
+import { setCookie, destroyCookie } from 'nookies';
 
 interface AuthContextType {
-  user: User | null
-  loading: boolean
+  user: User | null;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-})
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser(user)
-      } else {
-        setUser(null)
-      }
-      setLoading(false)
-    })
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setUser(user || null);
+      setLoading(false);
 
-    return () => unsubscribe()
-  }, [])
+      if (user) {
+        const token = await user.getIdToken();
+        setCookie(null, 'token', token, {
+          path: '/',
+          maxAge: 30 * 24 * 60 * 60,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+        });
+      } else {
+        destroyCookie(null, 'token');
+      }
+    });
+
+    // Token refresh every 55 minutes
+    const handle = setInterval(async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const token = await user.getIdToken(true);
+        setCookie(null, 'token', token, {
+          path: '/',
+          maxAge: 30 * 24 * 60 * 60,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+        });
+      }
+    }, 55 * 60 * 1000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(handle);
+    };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
       {!loading && children}
     </AuthContext.Provider>
-  )
+  );
 }
 
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => useContext(AuthContext);

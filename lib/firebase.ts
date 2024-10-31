@@ -10,11 +10,11 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// initialize Firebase
+// initialize firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// set persistence to LOCAL (survives browser restarts)
+// set persistence to local (survives browser restarts)
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
 export { app, auth };

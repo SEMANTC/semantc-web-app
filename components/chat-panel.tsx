@@ -82,8 +82,8 @@ export function ChatPanel({
       message: `list my last 5 bank transactions`
     },
     {
-      subheading: 'how many outstanding invoices do I have',
-      message: 'how many outstanding invoices do I have'
+      subheading: 'total of outstanding invoices',
+      message: 'total of outstanding invoices'
     }
   ]
 
