@@ -1,7 +1,7 @@
 // lib/context/auth.tsx
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../firebase';
 import { setCookie, destroyCookie } from 'nookies';
@@ -16,7 +16,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
 });
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,14 +27,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (user) {
         const token = await user.getIdToken();
-        setCookie(null, 'token', token, {
+        setCookie(null, 'session', token, {
           path: '/',
-          maxAge: 30 * 24 * 60 * 60,
+          maxAge: 30 * 24 * 60 * 60, // 30 days
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
         });
       } else {
-        destroyCookie(null, 'token');
+        destroyCookie(null, 'session');
       }
     });
 
@@ -43,9 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = auth.currentUser;
       if (user) {
         const token = await user.getIdToken(true);
-        setCookie(null, 'token', token, {
+        setCookie(null, 'session', token, {
           path: '/',
-          maxAge: 30 * 24 * 60 * 60,
+          maxAge: 30 * 24 * 60 * 60, // 30 days
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
         });

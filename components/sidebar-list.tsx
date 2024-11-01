@@ -1,20 +1,19 @@
 // components/sidebar-list.tsx
-import { clearChats, getChats } from '@/app/actions'
-import { ClearHistory } from '@/components/clear-history'
-import { SidebarItems } from '@/components/sidebar-items'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { cache } from 'react'
+import { clearChats, getChats } from '@/app/actions';
+import { ClearHistory } from '@/components/clear-history';
+import { SidebarItems } from '@/components/sidebar-items';
+import { cache } from 'react';
 
 interface SidebarListProps {
-  children?: React.ReactNode
+  children?: React.ReactNode;
 }
 
 const loadChats = cache(async () => {
-  return await getChats()
-})
+  return await getChats();
+});
 
 export async function SidebarList() {
-  const chats = await loadChats()
+  const chats = await loadChats();
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -34,5 +33,5 @@ export async function SidebarList() {
         <ClearHistory clearChats={clearChats} isEnabled={chats?.length > 0} />
       </div>
     </div>
-  )
+  );
 }
