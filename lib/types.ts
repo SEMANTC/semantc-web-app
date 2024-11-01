@@ -1,3 +1,4 @@
+// lib/types.ts
 import { Message } from 'ai'
 
 export interface Chat extends Record<string, any> {
@@ -7,7 +8,6 @@ export interface Chat extends Record<string, any> {
   userId: string
   path: string
   messages: Message[]
-  sharePath?: string
 }
 
 export type ServerActionResult<Result> = Promise<

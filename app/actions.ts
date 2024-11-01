@@ -92,37 +92,6 @@ export async function clearChats() {
   }
 }
 
-export async function getSharedChat(id: string) {
-  try {
-    const chat = await fetchFromCloudRun(`/api/get-shared-chat?id=${id}`, 'GET');
-    if (!chat || !chat.sharePath) {
-      return null;
-    }
-    return chat;
-  } catch (error) {
-    console.error('Error fetching shared chat:', error);
-    return null;
-  }
-}
-
-export async function shareChat(id: string) {
-  const user = await getServerUser(); // Get the authenticated user
-
-  if (!user) {
-    return {
-      error: 'Unauthorized',
-    };
-  }
-
-  try {
-    return await fetchFromCloudRun(`/api/share-chat`, 'POST', { id, userId: user.uid });
-  } catch (error) {
-    return {
-      error: 'Failed to share chat',
-    };
-  }
-}
-
 export async function saveChat(chat: Chat) {
   try {
     await fetchFromCloudRun(`/api/save-chat`, 'POST', chat);

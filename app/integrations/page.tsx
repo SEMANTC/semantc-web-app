@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { auth, firestore } from '@/lib/firebase';
+import { auth, firestore } from '@/lib/firebase'; // Client SDK
 import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 

@@ -1,7 +1,9 @@
 // app/api/oauth/xero/route.ts
+export const runtime = 'nodejs'; // Correct, Node.js runtime supports firebase-admin
+
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
 import { adminAuth, firestoreAdmin } from '@/lib/firebaseAdmin';
+import axios from 'axios';
 import { encrypt } from '@/lib/encryption';
 
 export async function GET(request: NextRequest) {
