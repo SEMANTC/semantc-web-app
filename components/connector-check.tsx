@@ -22,12 +22,23 @@ export default function ConnectorCheck({ children }: { children: React.ReactNode
         return;
       }
 
-      const res = await fetch('/api/check-connector');
-      if (res.ok) {
-        const data = await res.json();
-        if (!data.active) {
-          router.push('/integrations');
+      try {
+        const res = await fetch('/api/check-connector', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.active) {
+            router.push('/integrations');
+          }
+        } else {
+          router.push('/login');
         }
+      } catch (error) {
+        console.error('Error fetching connector status:', error);
+        router.push('/login');
       }
     }
 

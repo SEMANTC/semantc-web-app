@@ -11,16 +11,30 @@ export async function POST(request: NextRequest) {
       password,
     });
 
-    // Create a connector document with active: false
+    // Create a connector document with connectedApps initialized
     await firestoreAdmin.collection('connectors').doc(userRecord.uid).set({
+      uid: userRecord.uid,
+      connectedApps: {
+        xero: {},
+        shopify: {},
+        googleads: {},
+      },
       active: false,
-      // Add other fields as needed
     });
 
-    // Optionally, create a session token or return user info
-    const idToken = await adminAuth.createCustomToken(userRecord.uid);
+    // Create a custom token
+    const customToken = await adminAuth.createCustomToken(userRecord.uid);
 
-    return NextResponse.json({ status: 'success', idToken }, { status: 201 });
+    // Set the session cookie
+    const response = NextResponse.json({ status: 'success', customToken }, { status: 201 });
+    response.cookies.set('session', customToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 5, // 5 days
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     console.error('Error signing up:', error);
     return NextResponse.json({ error: 'Failed to sign up' }, { status: 500 });

@@ -16,7 +16,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
 });
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,14 +27,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (user) {
         const token = await user.getIdToken();
-        setCookie(null, 'session', token, {
+        setCookie(null, 'session', token, { // Changed from 'token' to 'session'
           path: '/',
           maxAge: 30 * 24 * 60 * 60, // 30 days
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
         });
       } else {
-        destroyCookie(null, 'session');
+        destroyCookie(null, 'session'); // Changed from 'token' to 'session'
       }
     });
 
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const user = auth.currentUser;
       if (user) {
         const token = await user.getIdToken(true);
-        setCookie(null, 'session', token, {
+        setCookie(null, 'session', token, { // Changed from 'token' to 'session'
           path: '/',
           maxAge: 30 * 24 * 60 * 60, // 30 days
           secure: process.env.NODE_ENV === 'production',
