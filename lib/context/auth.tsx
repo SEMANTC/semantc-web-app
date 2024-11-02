@@ -1,10 +1,10 @@
 // lib/context/auth.tsx
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 import { auth } from '../firebase';
-import { setCookie, destroyCookie } from 'nookies';
 
 interface AuthContextType {
   user: User | null;
@@ -19,44 +19,64 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user || null);
-      setLoading(false);
+      try {
+        if (user) {
+          // Get fresh ID token
+          const idToken = await user.getIdToken(true);
+          
+          // Set session cookie
+          const response = await fetch('/api/set-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ idToken }),
+          });
 
-      if (user) {
-        const token = await user.getIdToken();
-        setCookie(null, 'session', token, { // Changed from 'token' to 'session'
-          path: '/',
-          maxAge: 30 * 24 * 60 * 60, // 30 days
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-        });
-      } else {
-        destroyCookie(null, 'session'); // Changed from 'token' to 'session'
+          if (!response.ok) {
+            throw new Error('Failed to set session');
+          }
+        }
+        setUser(user);
+      } catch (error) {
+        console.error('Auth state change error:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
     });
 
-    // Token refresh every 55 minutes
-    const handle = setInterval(async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const token = await user.getIdToken(true);
-        setCookie(null, 'session', token, { // Changed from 'token' to 'session'
-          path: '/',
-          maxAge: 30 * 24 * 60 * 60, // 30 days
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-        });
-      }
-    }, 55 * 60 * 1000);
-
-    return () => {
-      unsubscribe();
-      clearInterval(handle);
-    };
+    return () => unsubscribe();
   }, []);
+
+  // Set up token refresh
+  useEffect(() => {
+    if (!user) return;
+
+    const handle = setInterval(async () => {
+      try {
+        // Force token refresh
+        const idToken = await user.getIdToken(true);
+        
+        // Update session
+        await fetch('/api/set-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ idToken }),
+        });
+      } catch (error) {
+        console.error('Token refresh error:', error);
+      }
+    }, 10 * 60 * 1000); // Refresh every 10 minutes
+
+    return () => clearInterval(handle);
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
