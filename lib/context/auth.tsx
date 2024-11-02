@@ -1,19 +1,22 @@
 // lib/context/auth.tsx
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { onAuthStateChanged, User, signOut as firebaseSignOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth } from '../firebase';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  signOut: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -21,68 +24,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const clearSession = useCallback(async () => {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Failed to clear session:', error);
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      await firebaseSignOut(auth);
+      await clearSession();
+      toast.success('Signed out successfully');
+      router.push('/login');
+    } catch (error) {
+      console.error('Sign out error:', error);
+      toast.error('Failed to sign out');
+    }
+  }, [clearSession, router]);
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
-        if (user) {
-          // Get fresh ID token
-          const idToken = await user.getIdToken(true);
-          
-          // Set session cookie
-          const response = await fetch('/api/set-session', {
+        if (firebaseUser) {
+          const idToken = await firebaseUser.getIdToken(true);
+          const response = await fetch('/api/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ idToken }),
+            credentials: 'include',
           });
 
           if (!response.ok) {
             throw new Error('Failed to set session');
           }
+          setUser(firebaseUser);
+        } else {
+          setUser(null);
+          await clearSession();
         }
-        setUser(user);
       } catch (error) {
         console.error('Auth state change error:', error);
         setUser(null);
+        await clearSession();
       } finally {
         setLoading(false);
       }
     });
 
     return () => unsubscribe();
-  }, []);
-
-  // Set up token refresh
-  useEffect(() => {
-    if (!user) return;
-
-    const handle = setInterval(async () => {
-      try {
-        // Force token refresh
-        const idToken = await user.getIdToken(true);
-        
-        // Update session
-        await fetch('/api/set-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ idToken }),
-        });
-      } catch (error) {
-        console.error('Token refresh error:', error);
-      }
-    }, 10 * 60 * 1000); // Refresh every 10 minutes
-
-    return () => clearInterval(handle);
-  }, [user]);
+  }, [clearSession]);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, loading, signOut }}>
+      {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

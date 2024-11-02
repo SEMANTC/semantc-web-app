@@ -4,14 +4,14 @@ import { adminAuth } from './firebaseAdmin';
 
 export async function getServerUser() {
   const cookieStore = cookies();
-  const token = cookieStore.get('token')?.value;
+  const session = cookieStore.get('session')?.value;
 
-  if (!token) {
+  if (!session) {
     return null;
   }
 
   try {
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    const decodedToken = await adminAuth.verifyIdToken(session);
     return decodedToken;
   } catch (error) {
     console.error('Error verifying ID token:', error);
