@@ -1,97 +1,161 @@
 // app/api/oauth/xero/route.ts
-export const runtime = 'nodejs'; // Correct, Node.js runtime supports firebase-admin
+export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, firestoreAdmin } from '@/lib/firebaseAdmin';
+import { adminAuth, firestoreAdmin, admin } from '@/lib/firebaseAdmin';
 import axios from 'axios';
 import { encrypt } from '@/lib/encryption';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Custom logging function
+function logToFile(message: string) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `${timestamp}: ${message}\n`;
+  
+  // Log to console
+  process.stdout.write(logMessage);
+  
+  // Also log to file
+  fs.appendFileSync(path.join(process.cwd(), 'xero-oauth.log'), logMessage);
+}
 
 export async function GET(request: NextRequest) {
+  logToFile('=== XERO OAUTH CALLBACK STARTED ===');
+
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
+  
+  logToFile(`Received authorization code: ${code ? 'Yes' : 'No'}`);
 
   if (!code) {
-    return NextResponse.redirect('/error');
+    logToFile('No code provided - redirecting to error page');
+    return NextResponse.redirect('/integrations?error=no_code');
   }
 
   try {
-    // Retrieve the user's UID from the session cookie
+    // Session verification
     const sessionCookie = request.cookies.get('session')?.value;
+    logToFile(`Session cookie present: ${sessionCookie ? 'Yes' : 'No'}`);
+
     if (!sessionCookie) {
+      logToFile('No session cookie - redirecting to login');
       return NextResponse.redirect('/login');
     }
 
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
-    const uid = decodedClaims.uid;
-
-    // Exchange code for tokens
-    const tokenResponse = await axios.post(
-      'https://identity.xero.com/connect/token',
-      new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: process.env.XERO_REDIRECT_URI!,
-        client_id: process.env.XERO_CLIENT_ID!,
-        client_secret: process.env.XERO_CLIENT_SECRET!,
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      }
-    );
-
-    const tokenData = tokenResponse.data;
-
-    // Calculate expires_at
-    const acquiredTime = Math.floor(Date.now() / 1000); // Current time in seconds
-    const expires_at = acquiredTime + tokenData.expires_in;
-
-    // Fetch connected tenants
-    const connectionsResponse = await axios.get('https://api.xero.com/connections', {
-      headers: {
-        Authorization: `Bearer ${tokenData.access_token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (connectionsResponse.data.length === 0) {
-      throw new Error('No connected tenants found');
+    // Token verification
+    let uid;
+    try {
+      const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
+      uid = decodedClaims.uid;
+      logToFile(`User authenticated with ID: ${uid}`);
+    } catch (error) {
+      logToFile(`Session verification failed: ${error}`);
+      return NextResponse.redirect('/login');
     }
 
-    // Use the first connected tenant's ID
-    const tenant = connectionsResponse.data[0];
-    const tenantId = tenant.tenantId;
-
-    // Encrypt tokens
-    const encryptedAccessToken = encrypt(tokenData.access_token);
-    const encryptedRefreshToken = encrypt(tokenData.refresh_token);
-
-    // Store tokens and tenant info in Firestore
-    await firestoreAdmin
-      .collection('users')
-      .doc(uid)
-      .set(
+    // Token exchange
+    logToFile('Starting token exchange with Xero');
+    let tokenData;
+    try {
+      const tokenResponse = await axios.post(
+        'https://identity.xero.com/connect/token',
+        new URLSearchParams({
+          grant_type: 'authorization_code',
+          code: code,
+          redirect_uri: process.env.XERO_REDIRECT_URI!,
+          client_id: process.env.XERO_CLIENT_ID!,
+          client_secret: process.env.XERO_CLIENT_SECRET!,
+        }),
         {
-          connectedApps: {
-            xero: {
-              tenantId: tenantId,
-              accessToken: encryptedAccessToken,
-              refreshToken: encryptedRefreshToken,
-              expiresAt: expires_at,
-              tokenType: tokenData.token_type,
-              scope: tokenData.scope,
-              lastSync: null,
-            },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
           },
-        },
-        { merge: true }
+        }
       );
+      
+      tokenData = tokenResponse.data;
+      logToFile('Token exchange successful');
+      logToFile(`Token type: ${tokenData.token_type}`);
+      logToFile(`Expires in: ${tokenData.expires_in}`);
+    } catch (error: any) {
+      logToFile(`Token exchange failed: ${error.message}`);
+      logToFile(`Error response: ${JSON.stringify(error.response?.data || {})}`);
+      return NextResponse.redirect('/integrations?error=token_exchange_failed');
+    }
 
-    // Redirect the user to the integrations page
-    return NextResponse.redirect('/integrations');
+    // Fetch Xero organizations
+    logToFile('Fetching Xero organizations');
+    let tenant;
+    try {
+      const connectionsResponse = await axios.get('https://api.xero.com/connections', {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!connectionsResponse.data || connectionsResponse.data.length === 0) {
+        logToFile('No Xero organizations found');
+        return NextResponse.redirect('/integrations?error=no_tenants');
+      }
+
+      tenant = connectionsResponse.data[0];
+      logToFile(`Found organization: ${tenant.tenantName} (${tenant.tenantId})`);
+    } catch (error: any) {
+      logToFile(`Failed to fetch organizations: ${error.message}`);
+      return NextResponse.redirect('/integrations?error=tenant_fetch_failed');
+    }
+
+    // Store in Firestore
+    logToFile('Beginning Firestore storage');
+    try {
+      const batch = firestoreAdmin.batch();
+
+      // Connectors document
+      logToFile('Preparing connectors document');
+      const connectorRef = firestoreAdmin.collection('connectors').doc(uid);
+      const connectorData = {
+        active: true,
+        provider: 'xero',
+        tenantId: tenant.tenantId,
+        tenantName: tenant.tenantName,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      batch.set(connectorRef, connectorData, { merge: true });
+      logToFile('Added connector document to batch');
+
+      // Credentials document
+      logToFile('Preparing credentials document');
+      const credentialsRef = firestoreAdmin.collection('credentials').doc(uid);
+      const credentialsData = {
+        xero: {
+          accessToken: encrypt(tokenData.access_token),
+          refreshToken: encrypt(tokenData.refresh_token),
+          expiresAt: Math.floor(Date.now() / 1000) + tokenData.expires_in,
+          tokenType: tokenData.token_type,
+          scope: tokenData.scope,
+          lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        }
+      };
+      batch.set(credentialsRef, credentialsData, { merge: true });
+      logToFile('Added credentials document to batch');
+
+      // Commit batch
+      logToFile('Committing Firestore batch');
+      await batch.commit();
+      logToFile('Successfully stored all data in Firestore');
+    } catch (error) {
+      logToFile(`Firestore storage failed: ${error}`);
+      return NextResponse.redirect('/integrations?error=storage_failed');
+    }
+
+    logToFile('=== XERO OAUTH CALLBACK COMPLETED SUCCESSFULLY ===');
+    return NextResponse.redirect('/integrations?status=success');
+
   } catch (error: any) {
-    console.error('OAuth Callback Error:', error.response?.data || error.message);
-    return NextResponse.redirect('/error');
+    logToFile(`Unexpected error: ${error.message}`);
+    logToFile(error.stack || 'No stack trace available');
+    return NextResponse.redirect('/integrations?error=unexpected');
   }
 }

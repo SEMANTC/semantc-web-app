@@ -1,86 +1,96 @@
 // app/integrations/page.tsx
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { auth, firestore } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { toast } from 'sonner';
+import { useAuth } from '@/lib/context/auth';
 
-interface ConnectedApp {
-  [key: string]: any;
+interface ConnectedApps {
+  xero?: {
+    tenantName: string;
+    connectedAt: Date;
+  };
 }
 
 export default function IntegrationsPage() {
-  const [connectedApps, setConnectedApps] = useState<ConnectedApp | null>(null);
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const status = searchParams.get('status');
+  const error = searchParams.get('error');
+  const { user } = useAuth();
+  const [connectedApps, setConnectedApps] = useState<ConnectedApps | null>(null);
 
   useEffect(() => {
-    const fetchConnectedApps = async () => {
-      const user = auth.currentUser;
+    if (status === 'success') {
+      toast.success('Successfully connected to Xero!');
+    }
 
-      if (!user) {
-        router.push('/login');
-        return;
+    if (error) {
+      switch (error) {
+        case 'no_code':
+          toast.error('Authorization code missing from Xero');
+          break;
+        case 'no_tenants':
+          toast.error('No Xero organizations found');
+          break;
+        case 'oauth_failed':
+          toast.error('Failed to connect to Xero');
+          break;
+        default:
+          toast.error('An error occurred while connecting to Xero');
       }
+    }
+  }, [status, error]);
 
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
+  useEffect(() => {
+    async function fetchConnectedApps() {
+      if (!user) return;
 
-      if (userDocSnap.exists()) {
-        setConnectedApps(userDocSnap.data().connectedApps);
-      } else {
-        setConnectedApps({});
+      try {
+        const response = await fetch('/api/user/connected-apps', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setConnectedApps(data.connectedApps);
+        }
+      } catch (error) {
+        console.error('Error fetching connected apps:', error);
       }
-    };
+    }
 
     fetchConnectedApps();
-  }, [router]);
+  }, [user]);
 
   return (
-    <div className="container mx-auto px-4 py-8 font-manrope text-center">
-      <div className="mb-12">
-        {/* <h2 className="text-xl font-semibold mb-4">Connected Applications</h2> */}
-        {connectedApps === null ? (
-          // <p>Loading...</p>
-          <p></p>
-        ) : Object.keys(connectedApps).length > 0 ? (
-          <div className="grid gap-4">
-            {Object.entries(connectedApps).map(([appKey, appData]: [string, any]) => (
-              <div key={appKey}>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  {appKey === 'xero' && (
-                    <img
-                      src="/images/xero.png"
-                      alt="Xero logo"
-                      className="w-6 h-6 object-contain"
-                    />
-                  )}
-                  <h3 className="font-semibold">{appKey.toUpperCase()}</h3>
-                </div>
-                <p>Connected and syncing data</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500">No connected applications.</p>
-        )}
-      </div>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-8">Available Integrations</h2>
-        <div className="flex flex-col items-center">
-          <img
-            src="/images/xero.png"
-            alt="Xero logo"
-            className="w-32 h-32 object-contain mb-4"
-          />
-          <p className="mb-6 text-gray-600">Connect your Xero account to sync financial data</p>
-          <a
-            href="/oauth/xero"
-            className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-lg"
-          >
-            CONNECT
-          </a>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Integrations</h1>
+      
+      <div className="grid gap-6">
+        <div className="border rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Xero</h2>
+          {connectedApps?.xero ? (
+            <div>
+              <p>Connected to: {connectedApps.xero.tenantName}</p>
+              <p className="text-sm text-gray-500">
+                Connected on: {new Date(connectedApps.xero.connectedAt).toLocaleDateString()}
+              </p>
+              <button
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                onClick={() => {/* Add disconnect handler */}}
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <a
+              href="/oauth/xero"
+              className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Connect to Xero
+            </a>
+          )}
         </div>
       </div>
     </div>
