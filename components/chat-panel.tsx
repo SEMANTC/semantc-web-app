@@ -1,11 +1,8 @@
+// components/chat-panel.tsx
 import * as React from 'react'
-import { shareChat } from '@/app/actions'
-import { Button } from '@/components/ui/button'
-import { PromptForm } from '@/components/prompt-form'
 import { ButtonScrollToBottom } from '@/components/button-scroll-to-bottom'
-import { IconShare } from '@/components/ui/icons'
 import { FooterText } from '@/components/footer'
-import { ChatShareDialog } from '@/components/chat-share-dialog'
+import { PromptForm } from '@/components/prompt-form' // Added import
 import { useAIState, useActions, useUIState } from 'ai/rsc'
 import type { AI } from '@/lib/chat/actions'
 import { nanoid } from '@/lib/utils'
@@ -32,7 +29,6 @@ export function ChatPanel({
   const [aiState] = useAIState()
   const [messages, setMessages] = useUIState<typeof AI>()
   const { submitUserMessage } = useActions()
-  const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
 
   const handleSubmit = async (userMessage: string) => {
@@ -82,8 +78,8 @@ export function ChatPanel({
       message: `list my last 5 bank transactions`
     },
     {
-      subheading: 'how many outstanding invoices do I have',
-      message: 'how many outstanding invoices do I have'
+      subheading: 'total of outstanding invoices',
+      message: 'total of outstanding invoices'
     }
   ]
 
@@ -112,35 +108,6 @@ export function ChatPanel({
               </div>
             ))}
         </div>
-
-        {messages?.length >= 2 ? (
-          <div className="flex h-fit items-center justify-center">
-            <div className="flex space-x-2">
-              {id && title ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShareDialogOpen(true)}
-                  >
-                    <IconShare className="mr-2" />
-                    Share
-                  </Button>
-                  <ChatShareDialog
-                    open={shareDialogOpen}
-                    onOpenChange={setShareDialogOpen}
-                    onCopy={() => setShareDialogOpen(false)}
-                    shareChat={shareChat}
-                    chat={{
-                      id,
-                      title,
-                      messages: aiState.messages
-                    }}
-                  />
-                </>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
 
         <div className="grid gap-4 sm:pb-4">
           <PromptForm

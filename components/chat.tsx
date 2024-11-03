@@ -1,49 +1,57 @@
-'use client'
+// components/chat.tsx
+'use client';
 
-import { ChatList } from '@/components/chat-list'
-import { ChatPanel } from '@/components/chat-panel'
-import { EmptyScreen } from '@/components/empty-screen'
-import { Message } from '@/lib/chat/actions'
-import { useLocalStorage } from '@/lib/hooks/use-local-storage'
-import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor'
-import { cn } from '@/lib/utils'
-import { useAIState, useUIState } from 'ai/rsc'
-import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { nanoid } from '@/lib/utils';
+import { useAIState, useUIState } from 'ai/rsc';
+import { useLocalStorage } from '@/lib/hooks/use-local-storage';
+import { useScrollAnchor } from '@/lib/hooks/use-scroll-anchor';
+import { cn } from '@/lib/utils';
+import { ChatList } from '@/components/chat-list';
+import { ChatPanel } from '@/components/chat-panel';
+import { EmptyScreen } from '@/components/empty-screen';
+import { Message } from '@/lib/chat/actions';
 
 export interface ChatProps extends React.ComponentProps<'div'> {
-  initialMessages?: Message[]
-  id?: string
+  initialMessages?: Message[];
+  id?: string;
 }
 
 export function Chat({ id, className }: ChatProps) {
-  const router = useRouter()
-  const path = usePathname()
-  const [input, setInput] = useState('')
-  const [messages] = useUIState()
-  const [aiState] = useAIState()
+  const router = useRouter();
+  const path = usePathname();
+  const [input, setInput] = useState('');
+  const [messages] = useUIState();
+  const [aiState] = useAIState();
 
-  const [_, setNewChatId] = useLocalStorage('newChatId', id)
+  const [_, setNewChatId] = useLocalStorage('newChatId', id);
+
+  useEffect(() => {
+    if (!id) {
+      const newId = nanoid();
+      setNewChatId(newId);
+      router.replace(`/chat/${newId}`);
+    } else {
+      setNewChatId(id);
+    }
+  }, [id, router, setNewChatId]);
 
   useEffect(() => {
     if (!path.includes('chat') && messages.length === 1) {
-      window.history.replaceState({}, '', `/chat/${id}`)
+      window.history.replaceState({}, '', `/chat/${id}`);
     }
-  }, [id, path, messages])
+  }, [id, path, messages]);
 
   useEffect(() => {
-    const messagesLength = aiState.messages?.length
+    const messagesLength = aiState.messages?.length;
     if (messagesLength === 2) {
-      router.refresh()
+      router.refresh();
     }
-  }, [aiState.messages, router])
-
-  useEffect(() => {
-    setNewChatId(id)
-  }, [id, setNewChatId])
+  }, [aiState.messages, router]);
 
   const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
-    useScrollAnchor()
+    useScrollAnchor();
 
   return (
     <div className={cn('flex flex-col h-full w-full', className)}>
@@ -65,5 +73,5 @@ export function Chat({ id, className }: ChatProps) {
         scrollToBottom={scrollToBottom}
       />
     </div>
-  )
+  );
 }

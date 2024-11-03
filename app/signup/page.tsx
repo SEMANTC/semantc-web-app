@@ -1,3 +1,4 @@
+// app/signup/page.tsx
 'use client'
 
 import SignupForm from '@/components/signup-form'

@@ -1,3 +1,4 @@
+// app/signup/actions.ts
 'use server'
 
 import { createUserWithEmailAndPassword } from 'firebase/auth'

@@ -1,3 +1,4 @@
+// tailwind.config.ts
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ['class'],
@@ -9,6 +10,15 @@ module.exports = {
     './lib/**/*.{ts,tsx}'
   ],
   prefix: '',
+  // Add these performance optimizations
+  future: {
+    hoverOnlyWhenSupported: true,
+    respectDefaultRingColorOpacity: true,
+    disableColorOpacityUtilitiesByDefault: true,
+    removeDeprecatedGapUtilities: true,
+  },
+  // Disable JIT in development
+  mode: process.env.NODE_ENV === 'production' ? 'jit' : 'aot',
   theme: {
     container: {
       center: true,
@@ -20,6 +30,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['var(--font-space-grotesk)', 'var(--font-geist-sans)', 'sans-serif'],
+        manrope: ['var(--font-manrope)', 'sans-serif'],
         mono: ['var(--font-geist-mono)', 'monospace']
       },
       colors: {
@@ -78,5 +89,19 @@ module.exports = {
       }
     }
   },
-  plugins: [require('tailwindcss-animate'), require('@tailwindcss/typography')]
-}
+  // Optimize plugins
+  plugins: [
+    require('tailwindcss-animate'),
+    require('@tailwindcss/typography')
+  ],
+  // Add these performance optimizations
+  variants: {
+    extend: {
+      // Limit variants to only what you're using
+      opacity: ['hover'],
+      backgroundColor: ['hover', 'dark'],
+      textColor: ['hover', 'dark'],
+      borderColor: ['dark'],
+    }
+  }
+};

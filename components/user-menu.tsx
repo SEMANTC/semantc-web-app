@@ -1,53 +1,61 @@
-import { type Session } from '@/lib/types'
+// components/user-menu.tsx
+'use client';
 
-import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation';
+import { signOut as firebaseSignOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { signOut } from '@/auth'
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/lib/context/auth';
 
-export interface UserMenuProps {
-  user: Session['user']
+function getUserInitials(email: string) {
+  const [namePart] = email.split('@');
+  const initials = namePart
+    .split('.')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
+  return initials || 'U';
 }
 
-function getUserInitials(name: string) {
-  const [firstName, lastName] = name.split(' ')
-  return lastName ? `${firstName[0]}${lastName[0]}` : firstName.slice(0, 2)
-}
+export function UserMenu() {
+  const { user } = useAuth();
+  const router = useRouter();
 
-export function UserMenu({ user }: UserMenuProps) {
+  if (!user) return null;
+
+  const handleSignOut = async () => {
+    await firebaseSignOut(auth);
+    router.push('/login');
+  };
+
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between font-manrope">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="pl-0">
             <div className="flex size-7 shrink-0 select-none items-center justify-center rounded-full bg-muted/50 text-xs font-medium uppercase text-muted-foreground">
-              {getUserInitials(user.email)}
+              {getUserInitials(user.email || '')}
             </div>
             <span className="ml-2 hidden md:block">{user.email}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent sideOffset={8} align="start" className="w-fit">
+        <DropdownMenuContent sideOffset={8} align="start" className="w-fit font-manrope">
           <DropdownMenuItem className="flex-col items-start">
             <div className="text-xs text-zinc-500">{user.email}</div>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <form
-            action={async () => {
-              'use server'
-              await signOut()
-            }}
-          >
-            <button className=" relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none transition-colors hover:bg-red-500 hover:text-white focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
-              Sign Out
-            </button>
-          </form>
+          <DropdownMenuItem onClick={handleSignOut}>
+            Sign Out
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  )
+  );
 }

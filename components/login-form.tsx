@@ -1,62 +1,115 @@
-'use client'
+// components/login-form.tsx
+'use client';
 
-import Link from 'next/link'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { IconSpinner } from './ui/icons'
-import { useRouter } from 'next/navigation'
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
-import { auth } from "@/lib/firebase"
-import { Poppins } from 'next/font/google'
+import Link from 'next/link';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { IconSpinner } from './ui/icons';
+import { useRouter } from 'next/navigation';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { Manrope } from 'next/font/google';
 
-const poppins = Poppins({ 
+const manrope = Manrope({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
-})
+});
 
-export default function LoginForm() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+interface LoginFormProps {
+  onLogin: (email: string, password: string) => Promise<void>;
+  error: string | null;
+}
+
+export default function LoginForm({ onLogin, error }: LoginFormProps) {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
+  // State for email and password
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      
+
       // Wait for the auth state to be ready
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       if (result.user) {
-        toast.success('Successfully signed in')
-        // Use replace instead of push to avoid back button issues
-        router.replace('/')
+        toast.success('Successfully signed in');
+        router.replace('/');
       }
     } catch (error: any) {
       console.error('Error during Google sign in:', error);
       if (error.code === 'auth/popup-closed-by-user') {
-        toast.error('Sign in cancelled')
+        toast.error('Sign in cancelled');
       } else {
-        toast.error(error.message || 'Failed to sign in with Google')
+        toast.error(error.message || 'Failed to sign in with Google');
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await onLogin(email, password);
+    } catch (error) {
+      console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center gap-4 space-y-3">
       <div className="w-full flex-1 border bg-white px-6 pb-4 pt-8 shadow-md md:w-96 dark:bg-zinc-950">
+        {/* Email/Password Login Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="Email"
+            className="p-2 border rounded"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="Password"
+            className="p-2 border rounded"
+          />
+          {error && <div className="text-red-500">{error}</div>}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`${manrope.className} h-10 w-full flex items-center justify-center gap-2 border bg-zinc-900 p-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50`}
+          >
+            {isLoading ? <IconSpinner /> : 'Login'}
+          </button>
+        </form>
+
+        <div className="my-4 text-center text-zinc-500">or</div>
+
+        {/* Google Sign-In Button */}
         <button
           onClick={handleGoogleSignIn}
           disabled={isLoading}
           type="button"
-          className={`${poppins.className} flex h-10 w-full flex-row items-center justify-center gap-2 border bg-white p-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:bg-zinc-950 dark:hover:bg-zinc-900`}
+          className={`${manrope.className} flex h-10 w-full items-center justify-center gap-2 border bg-white p-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50 dark:bg-zinc-950 dark:hover:bg-zinc-900`}
         >
           {isLoading ? (
             <IconSpinner />
           ) : (
             <>
+              {/* Google Icon SVG */}
               <svg viewBox="0 0 24 24" className="h-5 w-5">
                 <path
                   d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.28027 6.60998L5.27028 9.70498C6.21525 6.86002 8.87028 4.75 12.0003 4.75Z"
@@ -81,13 +134,10 @@ export default function LoginForm() {
         </button>
       </div>
 
-      <Link
-        href="/signup"
-        className="flex flex-row gap-1 text-sm text-zinc-400"
-      >
-        <span className={poppins.className}>No account yet?</span>{' '}
-        <div className={`${poppins.className} font-semibold underline`}>Sign up</div>
+      <Link href="/signup" className="flex flex-row gap-1 text-sm text-zinc-400">
+        <span className={manrope.className}>No account yet?</span>{' '}
+        <div className={`${manrope.className} font-semibold underline`}>Sign up</div>
       </Link>
     </div>
-  )
+  );
 }
