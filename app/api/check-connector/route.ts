@@ -17,10 +17,15 @@ export async function GET(request: NextRequest) {
 
     if (connectorDoc.exists) {
       const data = connectorDoc.data();
-      return NextResponse.json({ active: data?.active === true });
+      // Check if any integration is active
+      const hasActiveIntegration = data?.integrations?.xero?.active === true;
+      return NextResponse.json({ 
+        active: hasActiveIntegration,
+        integrations: data?.integrations || {}
+      });
     }
 
-    return NextResponse.json({ active: false });
+    return NextResponse.json({ active: false, integrations: {} });
   } catch (error) {
     console.error('Error verifying token or fetching connector:', error);
     return NextResponse.json({ active: false }, { status: 500 });

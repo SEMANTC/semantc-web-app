@@ -1,4 +1,4 @@
-// app/api/oauth/callback/route.ts 
+// app/api/oauth/callback/route.ts
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -79,66 +79,67 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/integrations?error=invalid_token_data`);
     }
 
-    // Fetch Xero connections
+    // Fetch Xero organizations
     console.log('Fetching Xero organizations...');
-    let connectionsResponse;
+    let tenant;
     try {
-      connectionsResponse = await axios.get('https://api.xero.com/connections', {
+      const connectionsResponse = await axios.get('https://api.xero.com/connections', {
         headers: {
           Authorization: `Bearer ${tokenData.access_token}`,
           'Content-Type': 'application/json',
         },
       });
+
+      if (!connectionsResponse.data?.length) {
+        console.log('No Xero organizations found');
+        return NextResponse.redirect(`${baseUrl}/integrations?error=no_organizations`);
+      }
+
+      tenant = connectionsResponse.data[0];
+      console.log('Found organization:', tenant.tenantName);
     } catch (error) {
-      console.error('Failed to fetch Xero organizations:', error);
+      console.error('Failed to fetch organizations:', error);
       return NextResponse.redirect(`${baseUrl}/integrations?error=fetch_org_failed`);
     }
 
-    if (!connectionsResponse.data?.length) {
-      console.log('No Xero organizations found');
-      return NextResponse.redirect(`${baseUrl}/integrations?error=no_organizations`);
-    }
-
-    const tenant = connectionsResponse.data[0];
-    console.log('Found organization:', tenant.tenantName);
-
-    // Store in Firestore
-    console.log('Storing in Firestore...');
+    // Store in Firestore with new structure
     try {
-      // Verify and encrypt tokens
-      const encryptedAccessToken = encrypt(tokenData.access_token);
-      const encryptedRefreshToken = encrypt(tokenData.refresh_token);
-      
-      console.log('Tokens encrypted successfully');
-
       const batch = firestoreAdmin.batch();
 
-      // Connector document
+      // Update connector document
       const connectorRef = firestoreAdmin.collection('connectors').doc(uid);
-      batch.set(connectorRef, {
+      const connectorUpdate = {
         active: true,
-        provider: 'xero',
-        tenantId: tenant.tenantId,
-        tenantName: tenant.tenantName,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-
-      // Credentials document
-      const credentialsRef = firestoreAdmin.collection('credentials').doc(uid);
-      batch.set(credentialsRef, {
-        xero: {
-          accessToken: encryptedAccessToken,
-          refreshToken: encryptedRefreshToken,
-          expiresAt: Math.floor(Date.now() / 1000) + tokenData.expires_in,
-          tokenType: tokenData.token_type,
-          scope: tokenData.scope,
-          lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        integrations: {
+          xero: {
+            active: true,
+            tenantId: tenant.tenantId,
+            tenantName: tenant.tenantName,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          }
         }
-      }, { merge: true });
+      };
+      batch.set(connectorRef, connectorUpdate, { merge: true });
+
+      // Update credentials document
+      const credentialsRef = firestoreAdmin.collection('credentials').doc(uid);
+      const credentialsUpdate = {
+        integrations: {
+          xero: {
+            accessToken: encrypt(tokenData.access_token),
+            refreshToken: encrypt(tokenData.refresh_token),
+            expiresAt: Math.floor(Date.now() / 1000) + tokenData.expires_in,
+            tokenType: tokenData.token_type,
+            scope: tokenData.scope,
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+          }
+        }
+      };
+      batch.set(credentialsRef, credentialsUpdate, { merge: true });
 
       await batch.commit();
       console.log('Successfully stored data in Firestore');
-
     } catch (error) {
       console.error('Firestore storage failed:', error);
       return NextResponse.redirect(`${baseUrl}/integrations?error=storage_failed`);
