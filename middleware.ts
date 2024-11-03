@@ -40,8 +40,24 @@ export async function middleware(req: NextRequest) {
     logRequest(req, `Accessing public path: ${pathname}`);
     // If user is already authenticated and tries to access login/signup pages
     if (token) {
-      logRequest(req, 'Authenticated user attempting to access public path - redirecting to home');
-      return NextResponse.redirect(new URL('/', req.url));
+      // Try to verify token via API
+      try {
+        const verifyResponse = await fetch(new URL('/api/verify-token', req.url), {
+          headers: {
+            Cookie: `session=${token}`
+          }
+        });
+        
+        if (verifyResponse.ok) {
+          logRequest(req, 'Authenticated user attempting to access public path - redirecting to home');
+          return NextResponse.redirect(new URL('/', req.url));
+        }
+      } catch (error) {
+        // Token verification failed, clear it
+        const response = NextResponse.next();
+        response.cookies.delete('session');
+        return response;
+      }
     }
     return NextResponse.next();
   }
@@ -52,20 +68,30 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  // Token exists and accessing protected route
-  logRequest(req, 'Valid token found - allowing access to protected route');
-  return NextResponse.next();
+  // Verify token for protected routes via API
+  try {
+    const verifyResponse = await fetch(new URL('/api/verify-token', req.url), {
+      headers: {
+        Cookie: `session=${token}`
+      }
+    });
+    
+    if (!verifyResponse.ok) {
+      throw new Error('Token verification failed');
+    }
+    
+    logRequest(req, 'Valid token found - allowing access to protected route');
+    return NextResponse.next();
+  } catch (error) {
+    logRequest(req, 'Token verification failed - redirecting to login');
+    const response = NextResponse.redirect(new URL('/login', req.url));
+    response.cookies.delete('session');
+    return response;
+  }
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|public/).*)',
   ],
 };
