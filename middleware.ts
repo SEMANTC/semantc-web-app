@@ -12,8 +12,8 @@ function logRequest(req: NextRequest, message: string) {
   const url = req.url;
   const userAgent = req.headers.get('user-agent') || 'unknown';
   
-  console.log(`[${timestamp}] ${method} ${url} - ${userAgent}`);
-  console.log(`Message: ${message}`);
+  // console.log(`[${timestamp}] ${method} ${url} - ${userAgent}`);
+  // console.log(`Message: ${message}`);
 }
 
 export async function middleware(req: NextRequest) {
