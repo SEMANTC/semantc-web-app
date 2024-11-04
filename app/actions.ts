@@ -21,7 +21,7 @@ async function fetchFromCloudRun(endpoint: string, method: string, body?: any) {
     },
     body: body ? JSON.stringify(body) : undefined,
     // Add timeout and retry logic
-    signal: AbortSignal.timeout(30000), // 30 seconds timeout
+    signal: AbortSignal.timeout(60000), // 60 seconds timeout
     next: { revalidate: 0 } // Disable cache
   });
 
