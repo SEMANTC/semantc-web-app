@@ -12,7 +12,7 @@ import { BotMessage, UserMessage, SpinnerMessage } from '@/components/stocks/mes
 import { nanoid } from '@/lib/utils';
 import { saveChat } from '@/app/actions';
 import { Chat } from '@/lib/types';
-import { getServerUser } from '@/lib/server-auth'; // Import the server-side auth helper
+import { getServerUser } from '@/lib/server-auth';
 
 const CLOUD_RUN_API_URL = process.env.CLOUD_RUN_API_URL;
 
@@ -30,6 +30,8 @@ export type AIState = {
 
 async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
   const fullUrl = `${CLOUD_RUN_API_URL}${endpoint}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds timeout
 
   try {
     const response = await fetch(fullUrl, {
@@ -38,8 +40,11 @@ async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
         'Content-Type': 'application/json',
       },
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+      next: { revalidate: 0 }
     });
 
+    clearTimeout(timeoutId);
     const responseText = await response.text();
 
     if (!response.ok) {
@@ -49,16 +54,26 @@ async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
     }
 
     return JSON.parse(responseText);
-  } catch (error) {
-    console.error('Error in API call:', error);
-    throw error;
+  } catch (err: unknown) { // Type the error
+    if (err instanceof Error) {
+      if (err.name === 'AbortError') {
+        throw new Error('Request timed out after 60 seconds');
+      }
+      console.error('Error in API call:', err);
+      throw err;
+    }
+    // For unknown errors
+    console.error('Unknown error in API call');
+    throw new Error('An unknown error occurred');
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
 async function submitUserMessage(content: string) {
   'use server';
 
-  const user = await getServerUser(); // Get the authenticated user
+  const user = await getServerUser();
 
   if (!user) {
     throw new Error('Unauthorized');
@@ -118,7 +133,6 @@ async function submitUserMessage(content: string) {
       processingState: 'idle',
     });
 
-    // Save the chat after updating aiState
     const { chatId, messages } = aiState.get();
     const createdAt = new Date();
     const path = `/chat/${chatId}`;
@@ -127,14 +141,14 @@ async function submitUserMessage(content: string) {
     const chat: Chat = {
       id: chatId,
       title,
-      userId: user.uid, // Use authenticated user's UID
+      userId: user.uid,
       createdAt,
       messages,
       path,
     };
 
     try {
-      await saveChat(chat); // Save the chat
+      await saveChat(chat);
     } catch (error) {
       console.error('Error saving chat:', error);
     }
@@ -187,7 +201,7 @@ export const AI = createAI<AIState, UIState>({
   onGetUIState: async () => {
     'use server';
 
-    const user = await getServerUser(); // Check for authenticated user
+    const user = await getServerUser();
 
     if (user) {
       const aiState = getAIState();
@@ -210,7 +224,7 @@ export const AI = createAI<AIState, UIState>({
   onSetAIState: async ({ state }) => {
     'use server';
 
-    const user = await getServerUser(); // Get the authenticated user
+    const user = await getServerUser();
 
     if (user) {
       const { chatId, messages } = state;
@@ -221,14 +235,14 @@ export const AI = createAI<AIState, UIState>({
       const chat: Chat = {
         id: chatId,
         title,
-        userId: user.uid, // Use user's UID
+        userId: user.uid,
         createdAt,
         messages,
         path,
       };
 
       try {
-        await saveChat(chat); // Save the chat
+        await saveChat(chat);
       } catch (error) {
         console.error('Error saving chat:', error);
       }

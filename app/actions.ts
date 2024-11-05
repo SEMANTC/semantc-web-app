@@ -7,32 +7,49 @@ import { getServerUser } from '@/lib/server-auth';
 import { Chat } from '@/lib/types';
 
 const CLOUD_RUN_API_URL = process.env.CLOUD_RUN_API_URL;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'; // Add this line
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 if (!CLOUD_RUN_API_URL) {
   throw new Error('CLOUD_RUN_API_URL is not set in the environment variables');
 }
 
 async function fetchFromCloudRun(endpoint: string, method: string, body?: any) {
-  const response = await fetch(`${CLOUD_RUN_API_URL}${endpoint}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    // Add timeout and retry logic
-    signal: AbortSignal.timeout(60000), // 60 seconds timeout
-    next: { revalidate: 0 } // Disable cache
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds timeout
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`API error: ${response.status} ${response.statusText}`);
-    console.error(`Error body: ${errorText}`);
-    throw new Error(`HTTP error! status: ${response.status}`);
+  try {
+    const response = await fetch(`${CLOUD_RUN_API_URL}${endpoint}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+      next: { revalidate: 0 }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API error: ${response.status} ${response.statusText}`);
+      console.error(`Error body: ${errorText}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (err: unknown) { // Type the error
+    if (err instanceof Error) {
+      if (err.name === 'AbortError') {
+        throw new Error('Request timed out after 60 seconds');
+      }
+      throw err;
+    }
+    // For unknown errors
+    throw new Error('An unknown error occurred');
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.json();
 }
 
 export async function getChats() {
@@ -43,7 +60,7 @@ export async function getChats() {
   }
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/get-chats`, {
+    const response = await fetch(`${APP_URL}/api/get-chats`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -67,7 +84,7 @@ export async function getChats() {
 
 export async function getChat(id: string, userId: string) {
   try {
-    const response = await fetch(`${APP_URL}/api/get-chats?chatId=${id}`, { // Add absolute URL
+    const response = await fetch(`${APP_URL}/api/get-chats?chatId=${id}`, {
       method: 'GET',
       credentials: 'include',
     });
@@ -92,7 +109,7 @@ export async function removeChat({ id, path }: { id: string; path: string }) {
   }
 
   try {
-    const response = await fetch(`${APP_URL}/api/save-chat?chatId=${id}`, { // Add absolute URL
+    const response = await fetch(`${APP_URL}/api/save-chat?chatId=${id}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -116,7 +133,7 @@ export async function clearChats() {
   }
 
   try {
-    const response = await fetch(`${APP_URL}/api/clear-chats`, { // Add absolute URL
+    const response = await fetch(`${APP_URL}/api/clear-chats`, {
       method: 'POST',
       credentials: 'include',
     });
@@ -134,8 +151,7 @@ export async function clearChats() {
 
 export async function saveChat(chat: Chat) {
   try {
-    // Save chat data to Firestore
-    const response = await fetch(`${APP_URL}/api/save-chat`, { // Add absolute URL
+    const response = await fetch(`${APP_URL}/api/save-chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -148,7 +164,6 @@ export async function saveChat(chat: Chat) {
       throw new Error('Failed to save chat');
     }
 
-    // Also send to Cloud Run for LLM processing
     await fetchFromCloudRun('/api/chat', 'POST', {
       messages: chat.messages,
       chatId: chat.id
