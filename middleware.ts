@@ -5,6 +5,16 @@ import type { NextRequest } from 'next/server';
 // Paths that don't require authentication
 const PUBLIC_PATHS = ['/login', '/signup', '/reset-password'];
 
+// API paths that should bypass the middleware
+const BYPASS_API_PATHS = [
+  '/api/login',
+  '/api/oauth',
+  '/api/verify-token',
+  '/api/get-chats',
+  '/api/save-chat',
+  '/api/check-connector'
+];
+
 // Helper function for logging
 function logRequest(req: NextRequest, message: string) {
   const timestamp = new Date().toISOString();
@@ -23,8 +33,7 @@ export async function middleware(req: NextRequest) {
 
   // Skip certain paths
   if (pathname.startsWith('/_next') || 
-      pathname.startsWith('/api/login') ||
-      pathname.startsWith('/api/oauth') ||
+      BYPASS_API_PATHS.some(path => pathname.startsWith(path)) ||
       pathname.includes('.') // Skip files like favicon.ico
   ) {
     logRequest(req, `Skipping middleware for path: ${pathname}`);

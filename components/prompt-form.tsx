@@ -17,6 +17,7 @@ import { useEnterSubmit } from '@/lib/hooks/use-enter-submit'
 import { nanoid } from 'nanoid'
 import { toast } from 'sonner'
 import { ArrowUp } from 'lucide-react'
+// import { IconPlus } from '@/components/ui/icons';
 
 export function PromptForm({
   input,

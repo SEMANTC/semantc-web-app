@@ -38,14 +38,13 @@ async function fetchFromCloudRun(endpoint: string, method: string, body?: any) {
     }
 
     return response.json();
-  } catch (err: unknown) { // Type the error
+  } catch (err: unknown) {
     if (err instanceof Error) {
       if (err.name === 'AbortError') {
         throw new Error('Request timed out after 60 seconds');
       }
       throw err;
     }
-    // For unknown errors
     throw new Error('An unknown error occurred');
   } finally {
     clearTimeout(timeoutId);
@@ -56,10 +55,12 @@ export async function getChats() {
   const user = await getServerUser();
 
   if (!user) {
+    console.log('No user found, returning empty array');
     return [];
   }
 
   try {
+    console.log('Fetching chats from:', `${APP_URL}/api/get-chats`);
     const response = await fetch(`${APP_URL}/api/get-chats`, {
       method: 'GET',
       credentials: 'include',
@@ -70,11 +71,14 @@ export async function getChats() {
     });
 
     if (!response.ok) {
-      console.error('Failed to fetch chats:', await response.text());
+      const errorText = await response.text();
+      console.error('Failed to fetch chats. Status:', response.status);
+      console.error('Error text:', errorText);
       return [];
     }
 
     const data = await response.json();
+    console.log('Received chats:', data);
     return data.chats || [];
   } catch (error) {
     console.error('Error fetching chats:', error);
@@ -87,14 +91,17 @@ export async function getChat(id: string, userId: string) {
     const response = await fetch(`${APP_URL}/api/get-chats?chatId=${id}`, {
       method: 'GET',
       credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
 
     if (!response.ok) {
       return null;
     }
 
-    const chats = await response.json();
-    return chats.find((chat: Chat) => chat.id === id) || null;
+    const chat = await response.json();
+    return chat || null; // The API now returns a single chat object directly
   } catch (error) {
     console.error('Error fetching chat:', error);
     return null;
