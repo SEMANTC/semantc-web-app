@@ -19,7 +19,12 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 * 24 * 5, // 5 days
       path: '/',
+      sameSite: 'lax',
+      priority: 'high'
     });
+
+    // Set the cookie in header as well to ensure it's forwarded
+    response.headers.append('Set-Cookie', `session=${idToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 5}`);
 
     return response;
   } catch (error) {

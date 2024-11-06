@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let decodedToken; // Declare here
+    let decodedToken; 
     try {
       decodedToken = await adminAuth.verifyIdToken(sessionCookie);
       console.log('Token verified for user:', decodedToken.uid);
@@ -56,8 +56,13 @@ export async function POST(request: NextRequest) {
     // Start a batch write
     const batch = firestoreAdmin.batch();
 
-    // Save chat metadata
-    const chatRef = firestoreAdmin.collection('conversations').doc(chat.id);
+    // Save chat metadata - Now under user's subcollection
+    const chatRef = firestoreAdmin
+      .collection('users')
+      .doc(userId)
+      .collection('conversations')
+      .doc(chat.id);
+
     batch.set(chatRef, chatData, { merge: true });
 
     // Save messages
@@ -69,7 +74,12 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const messageRef = firestoreAdmin.collection('messages').doc(message.id);
+        const messageRef = firestoreAdmin
+          .collection('users')
+          .doc(userId)
+          .collection('messages')
+          .doc(message.id);
+
         batch.set(messageRef, {
           conversationId: chat.id,
           content: message.content,

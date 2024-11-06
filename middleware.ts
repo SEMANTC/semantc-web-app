@@ -10,20 +10,14 @@ const BYPASS_API_PATHS = [
   '/api/login',
   '/api/oauth',
   '/api/verify-token',
-  '/api/get-chats',
-  '/api/save-chat',
   '/api/check-connector'
 ];
 
-// Helper function for logging
 function logRequest(req: NextRequest, message: string) {
   const timestamp = new Date().toISOString();
   const method = req.method;
   const url = req.url;
-  const userAgent = req.headers.get('user-agent') || 'unknown';
-  
-  // console.log(`[${timestamp}] ${method} ${url} - ${userAgent}`);
-  // console.log(`Message: ${message}`);
+  console.log(`[${timestamp}] ${method} ${url} - ${message}`);
 }
 
 export async function middleware(req: NextRequest) {
@@ -34,8 +28,7 @@ export async function middleware(req: NextRequest) {
   // Skip certain paths
   if (pathname.startsWith('/_next') || 
       BYPASS_API_PATHS.some(path => pathname.startsWith(path)) ||
-      pathname.includes('.') // Skip files like favicon.ico
-  ) {
+      pathname.includes('.')) {
     logRequest(req, `Skipping middleware for path: ${pathname}`);
     return NextResponse.next();
   }
@@ -44,12 +37,57 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get('session')?.value;
   logRequest(req, `Session token present: ${!!token}`);
 
-  // If it's a public path, allow access
+  // For API routes
+  if (pathname.startsWith('/api/')) {
+    if (!token) {
+      logRequest(req, 'No token found for protected API route - returning 401');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+      const verifyResponse = await fetch(new URL('/api/verify-token', req.url), {
+        headers: {
+          Cookie: `session=${token}`
+        }
+      });
+      
+      if (!verifyResponse.ok) {
+        logRequest(req, 'Token verification failed for API route - returning 401');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      // Create a new request with the session cookie
+      const requestHeaders = new Headers(req.headers);
+      requestHeaders.set('Cookie', `session=${token}`);
+
+      const response = NextResponse.next({
+        request: {
+          headers: requestHeaders
+        }
+      });
+
+      // Ensure cookie is set in response
+      response.cookies.set('session', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 5,
+        path: '/',
+        sameSite: 'lax',
+        priority: 'high'
+      });
+
+      logRequest(req, 'Valid token found - allowing access to API route');
+      return response;
+    } catch (error) {
+      logRequest(req, 'Token verification error for API route - returning 401');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+  }
+
+  // Handle public paths and other routes as before...
   if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
     logRequest(req, `Accessing public path: ${pathname}`);
-    // If user is already authenticated and tries to access login/signup pages
     if (token) {
-      // Try to verify token via API
       try {
         const verifyResponse = await fetch(new URL('/api/verify-token', req.url), {
           headers: {
@@ -62,7 +100,6 @@ export async function middleware(req: NextRequest) {
           return NextResponse.redirect(new URL('/', req.url));
         }
       } catch (error) {
-        // Token verification failed, clear it
         const response = NextResponse.next();
         response.cookies.delete('session');
         return response;
@@ -71,13 +108,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // If no token and trying to access protected route
   if (!token) {
     logRequest(req, 'No token found for protected route - redirecting to login');
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  // Verify token for protected routes via API
   try {
     const verifyResponse = await fetch(new URL('/api/verify-token', req.url), {
       headers: {
@@ -89,8 +124,26 @@ export async function middleware(req: NextRequest) {
       throw new Error('Token verification failed');
     }
     
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set('Cookie', `session=${token}`);
+
+    const response = NextResponse.next({
+      request: {
+        headers: requestHeaders
+      }
+    });
+
+    response.cookies.set('session', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 5,
+      path: '/',
+      sameSite: 'lax',
+      priority: 'high'
+    });
+
     logRequest(req, 'Valid token found - allowing access to protected route');
-    return NextResponse.next();
+    return response;
   } catch (error) {
     logRequest(req, 'Token verification failed - redirecting to login');
     const response = NextResponse.redirect(new URL('/login', req.url));

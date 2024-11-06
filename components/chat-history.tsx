@@ -2,12 +2,14 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { SidebarList } from '@/components/sidebar-list';
 import { buttonVariants } from '@/components/ui/button';
 import { IconPlus } from '@/components/ui/icons';
 import { nanoid } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { useLocalStorage } from '@/lib/hooks/use-local-storage';
 
 interface ChatHistoryProps {
   userId?: string;
@@ -15,9 +17,11 @@ interface ChatHistoryProps {
 
 export function ChatHistory({ userId }: ChatHistoryProps) {
   const router = useRouter();
+  const [_, setNewChatId] = useLocalStorage('newChatId', '');
 
   const handleNewChat = () => {
     const newChatId = nanoid();
+    setNewChatId(newChatId);
     router.push(`/chat/${newChatId}`);
   };
 
