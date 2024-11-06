@@ -12,7 +12,7 @@ import { BotMessage, UserMessage, SpinnerMessage } from '@/components/stocks/mes
 import { nanoid } from '@/lib/utils';
 import { saveChat } from '@/app/actions';
 import { Chat } from '@/lib/types';
-import { getServerUser } from '@/lib/server-auth'; // Import the server-side auth helper
+import { getServerUser } from '@/lib/server-auth';
 
 const CLOUD_RUN_API_URL = process.env.CLOUD_RUN_API_URL;
 
@@ -30,6 +30,8 @@ export type AIState = {
 
 async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
   const fullUrl = `${CLOUD_RUN_API_URL}${endpoint}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds timeout
 
   try {
     const response = await fetch(fullUrl, {
@@ -38,8 +40,11 @@ async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
         'Content-Type': 'application/json',
       },
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+      next: { revalidate: 0 }
     });
 
+    clearTimeout(timeoutId);
     const responseText = await response.text();
 
     if (!response.ok) {
@@ -49,34 +54,37 @@ async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
     }
 
     return JSON.parse(responseText);
-  } catch (error) {
-    console.error('Error in API call:', error);
-    throw error;
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      if (err.name === 'AbortError') {
+        throw new Error('Request timed out after 60 seconds');
+      }
+      console.error('Error in API call:', err);
+      throw err;
+    }
+    console.error('Unknown error in API call');
+    throw new Error('An unknown error occurred');
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
 async function submitUserMessage(content: string) {
   'use server';
 
-  const user = await getServerUser(); // Get the authenticated user
-
+  const user = await getServerUser();
   if (!user) {
     throw new Error('Unauthorized');
   }
 
   const aiState = getMutableAIState();
-
-  aiState.update({
-    ...aiState.get(),
-    processingState: 'processing',
-  });
-
   const newMessage = {
     id: nanoid(),
     role: 'user',
     content: content,
   };
 
+  // Update state once with new user message
   aiState.update({
     ...aiState.get(),
     messages: [...aiState.get().messages, newMessage],
@@ -95,8 +103,6 @@ async function submitUserMessage(content: string) {
     aiState.update({ ...aiState.get(), processingState: 'querying' });
     const result = await callCloudRunAPI('/api/chat', 'POST', { messages: history });
 
-    aiState.update({ ...aiState.get(), processingState: 'answering' });
-
     spinnerStream.done(null);
 
     const responseContent = result.sql_query
@@ -105,36 +111,36 @@ async function submitUserMessage(content: string) {
 
     messageStream.update(<BotMessage content={responseContent} />);
 
+    // Create assistant message
+    const assistantMessage = {
+      id: nanoid(),
+      role: 'assistant',
+      content: responseContent,
+    };
+
+    // Final state update with both messages
     aiState.update({
       ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'assistant',
-          content: responseContent,
-        },
-      ],
+      messages: [...aiState.get().messages, assistantMessage],
       processingState: 'idle',
     });
 
-    // Save the chat after updating aiState
+    // Only save chat here, after all messages are ready
     const { chatId, messages } = aiState.get();
-    const createdAt = new Date();
     const path = `/chat/${chatId}`;
     const title = messages[0]?.content.substring(0, 100) || 'New Chat';
 
     const chat: Chat = {
       id: chatId,
       title,
-      userId: user.uid, // Use authenticated user's UID
-      createdAt,
+      userId: user.uid,
+      createdAt: new Date(),
       messages,
       path,
     };
 
     try {
-      await saveChat(chat); // Save the chat
+      await saveChat(chat);
     } catch (error) {
       console.error('Error saving chat:', error);
     }
@@ -142,7 +148,6 @@ async function submitUserMessage(content: string) {
     messageStream.done();
   } catch (e) {
     console.error('Error in submitUserMessage:', e);
-
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
     messageStream.update(<BotMessage content={`Error: ${errorMessage}`} />);
     spinnerStream.done(null);
@@ -186,12 +191,9 @@ export const AI = createAI<AIState, UIState>({
   initialAIState: { chatId: nanoid(), messages: [], processingState: 'idle' },
   onGetUIState: async () => {
     'use server';
-
-    const user = await getServerUser(); // Check for authenticated user
-
+    const user = await getServerUser();
     if (user) {
       const aiState = getAIState();
-
       if (aiState) {
         return aiState.messages.map((message: Message, index: number) => ({
           id: `${aiState.chatId}-${index}`,
@@ -204,34 +206,8 @@ export const AI = createAI<AIState, UIState>({
         }));
       }
     }
-
     return [];
   },
-  onSetAIState: async ({ state }) => {
-    'use server';
-
-    const user = await getServerUser(); // Get the authenticated user
-
-    if (user) {
-      const { chatId, messages } = state;
-      const createdAt = new Date();
-      const path = `/chat/${chatId}`;
-      const title = messages[0]?.content.substring(0, 100) || 'New Chat';
-
-      const chat: Chat = {
-        id: chatId,
-        title,
-        userId: user.uid, // Use user's UID
-        createdAt,
-        messages,
-        path,
-      };
-
-      try {
-        await saveChat(chat); // Save the chat
-      } catch (error) {
-        console.error('Error saving chat:', error);
-      }
-    }
-  },
+  // Simplified to avoid duplicate saves
+  onSetAIState: async ({ state }) => { 'use server'; }
 });

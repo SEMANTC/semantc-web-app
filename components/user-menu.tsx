@@ -2,8 +2,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -25,14 +23,17 @@ function getUserInitials(email: string) {
 }
 
 export function UserMenu() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const router = useRouter();
 
-  if (!user) return null;
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
 
   const handleSignOut = async () => {
-    await firebaseSignOut(auth);
-    router.push('/login');
+    await signOut();
+    // No need to manually push to /login as it's handled in the auth context
   };
 
   return (
