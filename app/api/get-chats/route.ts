@@ -22,13 +22,12 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = decodedToken.uid;
+    const userRef = firestoreAdmin.collection('users').doc(userId);
 
     // if chatid is provided, get specific chat
     if (chatId) {
       try {
-        const chatDoc = await firestoreAdmin
-          .collection('users')
-          .doc(userId)
+        const chatDoc = await userRef
           .collection('conversations')
           .doc(chatId)
           .get();
@@ -37,9 +36,7 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
         }
 
-        const messagesSnapshot = await firestoreAdmin
-          .collection('users')
-          .doc(userId)
+        const messagesSnapshot = await userRef
           .collection('messages')
           .where('conversationId', '==', chatId)
           .orderBy('timestamp', 'asc')
@@ -69,9 +66,7 @@ export async function GET(request: NextRequest) {
 
     // get all chats
     try {
-      const chatsSnapshot = await firestoreAdmin
-        .collection('users')
-        .doc(userId)
+      const chatsSnapshot = await userRef
         .collection('conversations')
         .orderBy('lastUpdated', 'desc')
         .get();
@@ -80,9 +75,7 @@ export async function GET(request: NextRequest) {
       
       for (const doc of chatsSnapshot.docs) {
         try {
-          const messagesSnapshot = await firestoreAdmin
-            .collection('users')
-            .doc(userId)
+          const messagesSnapshot = await userRef
             .collection('messages')
             .where('conversationId', '==', doc.id)
             .orderBy('timestamp', 'asc')

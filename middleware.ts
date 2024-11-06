@@ -17,7 +17,7 @@ function logRequest(req: NextRequest, message: string) {
   const timestamp = new Date().toISOString();
   const method = req.method;
   const url = req.url;
-  console.log(`[${timestamp}] ${method} ${url} - ${message}`);
+  // console.log(`[${timestamp}] ${method} ${url} - ${message}`);
 }
 
 export async function middleware(req: NextRequest) {

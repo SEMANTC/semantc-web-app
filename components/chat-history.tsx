@@ -48,7 +48,7 @@ export function ChatHistory({ userId }: ChatHistoryProps) {
             {Array.from({ length: 10 }).map((_, i) => (
               <div
                 key={i}
-                className="w-full h-6 rounded-lg shrink-0 animate-pulse bg-zinc-200"
+                className="w-full h-6 rounded-lg shrink-0 animate-pulse bg-zinc-150"
               />
             ))}
           </div>

@@ -105,35 +105,32 @@ export async function GET(request: NextRequest) {
     // Store in Firestore with new structure
     try {
       const batch = firestoreAdmin.batch();
+      const userRef = firestoreAdmin.collection('users').doc(uid);
 
-      // Update connector document
-      const connectorRef = firestoreAdmin.collection('connectors').doc(uid);
+      // Update integrations/connectors document
+      const connectorRef = userRef.collection('integrations').doc('connectors');
       const connectorUpdate = {
         active: true,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        integrations: {
-          xero: {
-            active: true,
-            tenantId: tenant.tenantId,
-            tenantName: tenant.tenantName,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          }
+        xero: {
+          active: true,
+          tenantId: tenant.tenantId,
+          tenantName: tenant.tenantName,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
         }
       };
       batch.set(connectorRef, connectorUpdate, { merge: true });
 
-      // Update credentials document
-      const credentialsRef = firestoreAdmin.collection('credentials').doc(uid);
+      // Update integrations/credentials document
+      const credentialsRef = userRef.collection('integrations').doc('credentials');
       const credentialsUpdate = {
-        integrations: {
-          xero: {
-            accessToken: encrypt(tokenData.access_token),
-            refreshToken: encrypt(tokenData.refresh_token),
-            expiresAt: Math.floor(Date.now() / 1000) + tokenData.expires_in,
-            tokenType: tokenData.token_type,
-            scope: tokenData.scope,
-            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-          }
+        xero: {
+          accessToken: encrypt(tokenData.access_token),
+          refreshToken: encrypt(tokenData.refresh_token),
+          expiresAt: Math.floor(Date.now() / 1000) + tokenData.expires_in,
+          tokenType: tokenData.token_type,
+          scope: tokenData.scope,
+          lastUpdated: admin.firestore.FieldValue.serverTimestamp()
         }
       };
       batch.set(credentialsRef, credentialsUpdate, { merge: true });

@@ -177,10 +177,13 @@ export async function saveChat(chat: Chat) {
       throw new Error('Failed to save chat');
     }
 
-    await fetchFromCloudRun('/api/chat', 'POST', {
-      messages: chat.messages,
-      chatId: chat.id
-    });
+    // only call cloud run if there are valid messages
+    if (chat.messages && chat.messages.length > 0) {
+      await fetchFromCloudRun('/api/chat', 'POST', {
+        messages: chat.messages.filter(m => m.content), // filter out messages with no content
+        chatId: chat.id
+      });
+    }
 
     return response.json();
   } catch (error) {

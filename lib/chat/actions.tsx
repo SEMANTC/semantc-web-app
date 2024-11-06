@@ -54,7 +54,7 @@ async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
     }
 
     return JSON.parse(responseText);
-  } catch (err: unknown) { // Type the error
+  } catch (err: unknown) {
     if (err instanceof Error) {
       if (err.name === 'AbortError') {
         throw new Error('Request timed out after 60 seconds');
@@ -62,7 +62,6 @@ async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
       console.error('Error in API call:', err);
       throw err;
     }
-    // For unknown errors
     console.error('Unknown error in API call');
     throw new Error('An unknown error occurred');
   } finally {
@@ -74,24 +73,18 @@ async function submitUserMessage(content: string) {
   'use server';
 
   const user = await getServerUser();
-
   if (!user) {
     throw new Error('Unauthorized');
   }
 
   const aiState = getMutableAIState();
-
-  aiState.update({
-    ...aiState.get(),
-    processingState: 'processing',
-  });
-
   const newMessage = {
     id: nanoid(),
     role: 'user',
     content: content,
   };
 
+  // Update state once with new user message
   aiState.update({
     ...aiState.get(),
     messages: [...aiState.get().messages, newMessage],
@@ -110,8 +103,6 @@ async function submitUserMessage(content: string) {
     aiState.update({ ...aiState.get(), processingState: 'querying' });
     const result = await callCloudRunAPI('/api/chat', 'POST', { messages: history });
 
-    aiState.update({ ...aiState.get(), processingState: 'answering' });
-
     spinnerStream.done(null);
 
     const responseContent = result.sql_query
@@ -120,21 +111,22 @@ async function submitUserMessage(content: string) {
 
     messageStream.update(<BotMessage content={responseContent} />);
 
+    // Create assistant message
+    const assistantMessage = {
+      id: nanoid(),
+      role: 'assistant',
+      content: responseContent,
+    };
+
+    // Final state update with both messages
     aiState.update({
       ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'assistant',
-          content: responseContent,
-        },
-      ],
+      messages: [...aiState.get().messages, assistantMessage],
       processingState: 'idle',
     });
 
+    // Only save chat here, after all messages are ready
     const { chatId, messages } = aiState.get();
-    const createdAt = new Date();
     const path = `/chat/${chatId}`;
     const title = messages[0]?.content.substring(0, 100) || 'New Chat';
 
@@ -142,7 +134,7 @@ async function submitUserMessage(content: string) {
       id: chatId,
       title,
       userId: user.uid,
-      createdAt,
+      createdAt: new Date(),
       messages,
       path,
     };
@@ -156,7 +148,6 @@ async function submitUserMessage(content: string) {
     messageStream.done();
   } catch (e) {
     console.error('Error in submitUserMessage:', e);
-
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
     messageStream.update(<BotMessage content={`Error: ${errorMessage}`} />);
     spinnerStream.done(null);
@@ -200,12 +191,9 @@ export const AI = createAI<AIState, UIState>({
   initialAIState: { chatId: nanoid(), messages: [], processingState: 'idle' },
   onGetUIState: async () => {
     'use server';
-
     const user = await getServerUser();
-
     if (user) {
       const aiState = getAIState();
-
       if (aiState) {
         return aiState.messages.map((message: Message, index: number) => ({
           id: `${aiState.chatId}-${index}`,
@@ -218,34 +206,8 @@ export const AI = createAI<AIState, UIState>({
         }));
       }
     }
-
     return [];
   },
-  onSetAIState: async ({ state }) => {
-    'use server';
-
-    const user = await getServerUser();
-
-    if (user) {
-      const { chatId, messages } = state;
-      const createdAt = new Date();
-      const path = `/chat/${chatId}`;
-      const title = messages[0]?.content.substring(0, 100) || 'New Chat';
-
-      const chat: Chat = {
-        id: chatId,
-        title,
-        userId: user.uid,
-        createdAt,
-        messages,
-        path,
-      };
-
-      try {
-        await saveChat(chat);
-      } catch (error) {
-        console.error('Error saving chat:', error);
-      }
-    }
-  },
+  // Simplified to avoid duplicate saves
+  onSetAIState: async ({ state }) => { 'use server'; }
 });

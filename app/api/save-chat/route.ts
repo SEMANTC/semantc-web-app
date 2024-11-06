@@ -56,16 +56,12 @@ export async function POST(request: NextRequest) {
     // Start a batch write
     const batch = firestoreAdmin.batch();
 
-    // Save chat metadata - Now under user's subcollection
-    const chatRef = firestoreAdmin
-      .collection('users')
-      .doc(userId)
-      .collection('conversations')
-      .doc(chat.id);
-
+    // Save chat metadata under user's conversations
+    const userRef = firestoreAdmin.collection('users').doc(userId);
+    const chatRef = userRef.collection('conversations').doc(chat.id);
     batch.set(chatRef, chatData, { merge: true });
 
-    // Save messages
+    // Save messages under user's messages
     if (chat.messages && chat.messages.length > 0) {
       console.log(`Processing ${chat.messages.length} messages`);
       for (const message of chat.messages) {
@@ -74,12 +70,7 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const messageRef = firestoreAdmin
-          .collection('users')
-          .doc(userId)
-          .collection('messages')
-          .doc(message.id);
-
+        const messageRef = userRef.collection('messages').doc(message.id);
         batch.set(messageRef, {
           conversationId: chat.id,
           content: message.content,

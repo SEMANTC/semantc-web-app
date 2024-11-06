@@ -12,20 +12,21 @@ export async function POST(request: NextRequest) {
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const userId = decodedToken.uid;
+    const userRef = firestoreAdmin.collection('users').doc(userId);
 
     const batch = firestoreAdmin.batch();
 
     // Update the connector document
-    const connectorRef = firestoreAdmin.collection('connectors').doc(userId);
+    const connectorRef = userRef.collection('integrations').doc('connectors');
     batch.update(connectorRef, {
-      'integrations.xero': admin.firestore.FieldValue.delete(),
-      active: false // Set to false if this is the only integration
+      'xero': admin.firestore.FieldValue.delete(),
+      active: false // Set to false if Xero was the only integration
     });
 
     // Remove credentials
-    const credentialsRef = firestoreAdmin.collection('credentials').doc(userId);
+    const credentialsRef = userRef.collection('integrations').doc('credentials');
     batch.update(credentialsRef, {
-      'integrations.xero': admin.firestore.FieldValue.delete()
+      'xero': admin.firestore.FieldValue.delete()
     });
 
     await batch.commit();

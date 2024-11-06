@@ -13,15 +13,22 @@ export async function GET(request: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const userId = decodedToken.uid;
 
-    const connectorDoc = await firestoreAdmin.collection('connectors').doc(userId).get();
+    const connectorDoc = await firestoreAdmin
+      .collection('users')
+      .doc(userId)
+      .collection('integrations')
+      .doc('connectors')
+      .get();
 
     if (connectorDoc.exists) {
       const data = connectorDoc.data();
-      // Check if any integration is active
-      const hasActiveIntegration = data?.integrations?.xero?.active === true;
+      // Check if Xero integration is active
+      const hasActiveIntegration = data?.xero?.active === true;
       return NextResponse.json({ 
         active: hasActiveIntegration,
-        integrations: data?.integrations || {}
+        integrations: {
+          xero: data?.xero || {}
+        }
       });
     }
 
