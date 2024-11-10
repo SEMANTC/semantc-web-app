@@ -38,15 +38,15 @@ export default function LoginForm({ onLogin, error }: LoginFormProps) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       if (result.user) {
-        toast.success('Successfully signed in');
+        toast.success('successfully signed in');
         router.replace('/');
       }
     } catch (error: any) {
-      console.error('Error during Google sign in:', error);
+      console.error('error during Google sign in:', error);
       if (error.code === 'auth/popup-closed-by-user') {
-        toast.error('Sign in cancelled');
+        toast.error('sign in cancelled');
       } else {
-        toast.error(error.message || 'Failed to sign in with Google');
+        toast.error(error.message || 'failed to sign in with Google');
       }
     } finally {
       setIsLoading(false);
