@@ -105,7 +105,7 @@ export default function IntegrationsPage() {
             <div>
               <p>Connected to: {connectorData.integrations.xero.tenantName}</p>
               <p className="text-sm text-gray-500">
-                Connected on: {new Date(connectorData.integrations.xero.updatedAt).toLocaleDateString()}
+                connected on: {new Date(connectorData.integrations.xero.updatedAt).toLocaleDateString()}
               </p>
               <button
                 className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"

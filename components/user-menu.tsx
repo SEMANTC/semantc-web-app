@@ -53,7 +53,7 @@ export function UserMenu() {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut}>
-            Sign Out
+            sign out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
