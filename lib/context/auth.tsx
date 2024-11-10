@@ -42,8 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success('Signed out successfully');
       router.push('/login');
     } catch (error) {
-      console.error('Sign out error:', error);
-      toast.error('Failed to sign out');
+      console.error('sign out error:', error);
+      toast.error('failed to sign out');
     }
   }, [clearSession, router]);
 

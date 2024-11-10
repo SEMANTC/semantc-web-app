@@ -47,10 +47,10 @@ export default function XeroOAuthPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center font-manrope">
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-4">Connecting to Xero</h2>
-        <p className="text-gray-600">Please wait while we redirect you to Xero...</p>
+        <p className="text-gray-600">please wait while we redirect you to Xero</p>
       </div>
     </div>
   );

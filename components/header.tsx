@@ -26,7 +26,10 @@ export function Header() {
             <SidebarMobile>
               <ChatHistory userId={user.uid} />
             </SidebarMobile>
-            <SidebarToggle />
+            {/* <SidebarToggle /> */}
+            <Link href="/new" rel="nofollow">
+              <img className="w-auto h-4" src="/images/logo.png" alt="Semantc logo" />
+            </Link>
           </>
         ) : (
           <Link href="/new" rel="nofollow">
@@ -39,7 +42,7 @@ export function Header() {
             <UserMenu />
           ) : (
             <Button variant="link" asChild className="-ml-2">
-              <Link href="/login">Login</Link>
+              <Link href="/login">login</Link>
             </Button>
           )}
         </div>

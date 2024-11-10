@@ -27,14 +27,14 @@ export default function SignupForm() {
       });
       
       await signInWithPopup(auth, provider);
-      toast.success('Account created successfully')
+      toast.success('account created successfully')
       router.refresh()
     } catch (error: any) {
-      console.error('Error during Google sign up:', error);
+      console.error('error during Google sign up:', error);
       if (error.code === 'auth/popup-closed-by-user') {
-        toast.error('Sign up cancelled')
+        toast.error('sign up cancelled')
       } else {
-        toast.error(error.message || 'Failed to sign up with Google')
+        toast.error(error.message || 'failed to sign up with Google')
       }
     } finally {
       setIsLoading(false)
