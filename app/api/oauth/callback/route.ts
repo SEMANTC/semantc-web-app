@@ -237,12 +237,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/integrations?error=storage_failed`);
     }
 
-    console.log('=== XERO OAUTH CALLBACK COMPLETED SUCCESSFULLY ===');
+    console.log('XERO OAUTH CALLBACK COMPLETED SUCCESSFULLY');
     return NextResponse.redirect(`${baseUrl}/integrations?status=success`);
 
   } catch (error) {
     const unexpectedError = error as Error;
-    console.error('=== UNEXPECTED ERROR ===');
+    console.error('UNEXPECTED ERROR');
     console.error(unexpectedError.message);
     return NextResponse.redirect(`${baseUrl}/integrations?error=unexpected`);
   }
