@@ -7,7 +7,7 @@ import axios, { AxiosError } from 'axios';
 import { encrypt } from '@/lib/encryption';
 
 const PROVISION_ENDPOINT = process.env.PROVISION_CONNECTOR_URL || 'https://us-central1-semantc-sandbox.cloudfunctions.net/provision-connector';
-const PROVISION_TIMEOUT = 90000; // 90 seconds
+const PROVISION_TIMEOUT = 150000; // 150 seconds
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
 
