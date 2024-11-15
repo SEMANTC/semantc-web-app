@@ -8,13 +8,14 @@ export interface ChatList {
 
 export function ChatList({ messages, isShared }: ChatList) {
   return messages.length ? (
-    <div className="relative mx-auto max-w-2xl grid auto-rows-max gap-12 px-4">
-      {/* Reverse the messages array before mapping */}
-      {[...messages].reverse().map(message => (
-        <div key={message.id}>
-          {message.display}
-        </div>
-      ))}
+    <div className="relative mx-auto max-w-2xl px-4">
+      <div className="grid auto-rows-max gap-6 py-6">
+        {messages.map(message => (
+          <div key={message.id} className="fade-in">
+            {message.display}
+          </div>
+        ))}
+      </div>
     </div>
   ) : null
 }

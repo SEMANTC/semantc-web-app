@@ -29,6 +29,7 @@ export type AIState = {
 };
 
 async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
+  console.log(body);
   const fullUrl = `${CLOUD_RUN_API_URL}${endpoint}`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds timeout
