@@ -1,3 +1,4 @@
+// lib/auth.ts
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
