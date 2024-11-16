@@ -5,53 +5,10 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getServerUser } from '@/lib/server-auth';
 import { Chat } from '@/lib/types';
-import { cookies } from 'next/headers';
 import { getAuthHeaders } from '@/lib/headers';
+import { callCloudRunAPI } from '@/lib/cloud-run/client';
 
-const CLOUD_RUN_API_URL = process.env.CLOUD_RUN_API_URL;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-if (!CLOUD_RUN_API_URL) {
-  throw new Error('CLOUD_RUN_API_URL is not set in the environment variables');
-}
-
-async function fetchFromCloudRun(endpoint: string, method: string, body?: any) {
-  const headers = await getAuthHeaders();
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-  try {
-    const response = await fetch(`${CLOUD_RUN_API_URL}${endpoint}`, {
-      method,
-      headers,
-      credentials: 'include',
-      body: body ? JSON.stringify(body) : undefined,
-      signal: controller.signal,
-      cache: 'no-store',
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`API error: ${response.status} ${response.statusText}`);
-      console.error(`Error body: ${errorText}`);
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      if (err.name === 'AbortError') {
-        throw new Error('Request timed out after 60 seconds');
-      }
-      throw err;
-    }
-    throw new Error('An unknown error occurred');
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
 
 export async function getChats() {
   const user = await getServerUser();
@@ -179,8 +136,8 @@ export async function saveChat(chat: Chat) {
 
     // only call cloud run if there are valid messages
     if (chat.messages && chat.messages.length > 0) {
-      await fetchFromCloudRun('/api/chat', 'POST', {
-        messages: chat.messages.filter(m => m.content), // filter out messages with no content
+      await callCloudRunAPI('/api/chat', 'POST', {
+        messages: chat.messages.filter(m => m.content),
         chatId: chat.id
       });
     }

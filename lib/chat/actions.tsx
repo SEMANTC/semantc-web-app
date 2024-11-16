@@ -13,12 +13,7 @@ import { nanoid } from '@/lib/utils';
 import { saveChat } from '@/app/actions';
 import { Chat } from '@/lib/types';
 import { getServerUser } from '@/lib/server-auth';
-
-const CLOUD_RUN_API_URL = process.env.CLOUD_RUN_API_URL;
-
-if (!CLOUD_RUN_API_URL) {
-  throw new Error('CLOUD_RUN_API_URL is not set in the environment variables');
-}
+import { callCloudRunAPI } from '@/lib/cloud-run/client';
 
 export type ProcessingState = 'idle' | 'processing' | 'understanding' | 'querying' | 'answering';
 
@@ -27,48 +22,6 @@ export type AIState = {
   messages: Message[];
   processingState: ProcessingState;
 };
-
-async function callCloudRunAPI(endpoint: string, method: string, body?: any) {
-  console.log(body);
-  const fullUrl = `${CLOUD_RUN_API_URL}${endpoint}`;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds timeout
-
-  try {
-    const response = await fetch(fullUrl, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: body ? JSON.stringify(body) : undefined,
-      signal: controller.signal,
-      next: { revalidate: 0 }
-    });
-
-    clearTimeout(timeoutId);
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      console.error(`API error: ${response.status} ${response.statusText}`);
-      console.error(`Error body: ${responseText}`);
-      throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
-    }
-
-    return JSON.parse(responseText);
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      if (err.name === 'AbortError') {
-        throw new Error('Request timed out after 60 seconds');
-      }
-      console.error('Error in API call:', err);
-      throw err;
-    }
-    console.error('Unknown error in API call');
-    throw new Error('An unknown error occurred');
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
 
 async function submitUserMessage(content: string) {
   'use server';
@@ -209,6 +162,5 @@ export const AI = createAI<AIState, UIState>({
     }
     return [];
   },
-  // Simplified to avoid duplicate saves
   onSetAIState: async ({ state }) => { 'use server'; }
 });
