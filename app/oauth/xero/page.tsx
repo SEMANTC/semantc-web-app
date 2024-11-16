@@ -11,8 +11,8 @@ export default function XeroOAuthPage() {
     const clientId = process.env.NEXT_PUBLIC_XERO_CLIENT_ID;
     const redirectUri = `${window.location.origin}/api/oauth/callback`;
     
-    console.log('Initiating Xero OAuth flow');
-    console.log('Redirect URI:', redirectUri);
+    // console.log('Initiating Xero OAuth flow');
+    // console.log('Redirect URI:', redirectUri);
 
     const scopes = [
       'openid',

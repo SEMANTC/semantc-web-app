@@ -31,8 +31,8 @@ export async function callCloudRunAPI(endpoint: string, method: string, body?: a
   try {
     const headers = await getAuthHeaders();
     
-    // Add debugging logs
-    console.log('Making Cloud Run request with user:', user.uid);
+    // add debugging logs
+    // console.log('Making Cloud Run request with user:', user.uid);
     
     const requestBody = {
       ...body,
@@ -44,7 +44,7 @@ export async function callCloudRunAPI(endpoint: string, method: string, body?: a
       }
     };
 
-    console.log('Request body:', requestBody);
+    // console.log('Request body:', requestBody);
 
     const response = await fetch(fullUrl, {
       method,
@@ -61,11 +61,11 @@ export async function callCloudRunAPI(endpoint: string, method: string, body?: a
     clearTimeout(timeoutId);
     const responseText = await response.text();
 
-    console.log('Cloud Run Response:', responseText);
+    // console.log('Cloud Run Response:', responseText);
 
     if (!response.ok) {
-      console.error(`API error: ${response.status} ${response.statusText}`);
-      console.error(`Error body: ${responseText}`);
+      // console.error(`API error: ${response.status} ${response.statusText}`);
+      // console.error(`Error body: ${responseText}`);
       throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
     }
 
@@ -75,7 +75,7 @@ export async function callCloudRunAPI(endpoint: string, method: string, body?: a
       if (err.name === 'AbortError') {
         throw new Error('Request timed out after 60 seconds');
       }
-      console.error('Error in API call:', err);
+      // console.error('Error in API call:', err);
       throw err;
     }
     console.error('Unknown error in API call');
