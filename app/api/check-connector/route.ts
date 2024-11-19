@@ -22,12 +22,16 @@ export async function GET(request: NextRequest) {
 
     if (connectorDoc.exists) {
       const data = connectorDoc.data();
-      // Check if Xero integration is active
-      const hasActiveIntegration = data?.xero?.active === true;
+      
+      // check both xero and shopify integrations
+      const hasActiveXero = data?.xero?.active === true;
+      const hasActiveShopify = data?.shopify?.active === true;
+      
       return NextResponse.json({ 
-        active: hasActiveIntegration,
+        active: hasActiveXero || hasActiveShopify,
         integrations: {
-          xero: data?.xero || {}
+          xero: data?.xero || {},
+          shopify: data?.shopify || {}
         }
       });
     }
