@@ -29,16 +29,16 @@ export async function getChats() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Failed to fetch chats. Status:', response.status);
-      console.error('Error text:', errorText);
+      // console.error('Failed to fetch chats. Status:', response.status);
+      // console.error('Error text:', errorText);
       return [];
     }
 
     const data = await response.json();
-    console.log('Received chats:', data);
+    // console.log('Received chats:', data);
     return data.chats || [];
   } catch (error) {
-    console.error('Error fetching chats:', error);
+    // console.error('Error fetching chats:', error);
     return [];
   }
 }
@@ -60,7 +60,7 @@ export async function getChat(id: string, userId: string) {
     const chat = await response.json();
     return chat || null;
   } catch (error) {
-    console.error('Error fetching chat:', error);
+    // console.error('Error fetching chat:', error);
     return null;
   }
 }
@@ -130,7 +130,7 @@ export async function saveChat(chat: Chat) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Save chat error:', errorText);
+      // console.error('Save chat error:', errorText);
       throw new Error('Failed to save chat');
     }
 
@@ -144,7 +144,7 @@ export async function saveChat(chat: Chat) {
 
     return response.json();
   } catch (error) {
-    console.error('Error saving chat:', error);
+    // console.error('Error saving chat:', error);
     throw error;
   }
 }
